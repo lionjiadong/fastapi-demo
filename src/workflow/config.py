@@ -1,4 +1,4 @@
-## Broker settings.
+# Broker settings.
 broker_url = "amqp://guest:guest@localhost:5672//"
 
 # 结果后端设置
