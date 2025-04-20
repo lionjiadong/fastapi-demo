@@ -1,8 +1,8 @@
 # Broker settings.
-broker_url = "amqp://guest:guest@localhost:5672//"
+broker_url = "redis://localhost:6379/0"
 
 # 结果后端设置
-result_backend = "db+postgresql+psycopg://root:root@localhost/celery_test"
+result_backend = "db+postgresql+psycopg://postgres:postgres@localhost/fastapi_demo"
 
 # 内容类型/序列化器的白名单，以允许结果后端。
 # result_accept_content = ["json"]
