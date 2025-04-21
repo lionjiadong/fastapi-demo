@@ -1,6 +1,9 @@
 .venv
 .vscode
 .DS_Store
+docker/postgres_data
+docker/redis_data
+docker/rabbitmq_data
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
