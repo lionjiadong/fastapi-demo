@@ -1,14 +1,13 @@
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field
+
+from src.database.core import Base
+from src.database.base import DateTimeMixin
 
 
-class User(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    name: str = Field(index=True)
-    age: int | None = Field(default=None, index=True)
-    secret_name: str
+class User(DateTimeMixin, table=True):
+    # __table_args__ = {"schema": "dispatch_core"}
 
-class Hero(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    name: str = Field(index=True)
-    age: int | None = Field(default=None, index=True)
-    secret_name: str
+    username: str
+    email: str | None = None
+    full_name: str | None = None
+    disabled: bool = Field(default=False)

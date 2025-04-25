@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 from src.auth.routers import get_current_user
-from src.db import SessionDep
-from src.user.models import Hero, User
+from src.database.core import SessionDep
+from src.auth.models import Hero
+from src.user.models import User
 class UserInDB(User):
     hashed_password: str
 
