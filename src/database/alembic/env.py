@@ -26,6 +26,7 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 target_metadata = SQLModel.metadata
 
+
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
@@ -46,11 +47,6 @@ def run_migrations_offline() -> None:
     """
 
     # don't create empty revisions
-    def process_revision_directives(context, revision, directives):
-        script = directives[0]
-        if script.upgrade_ops.is_empty():
-            directives[:] = []
-            log.info("No changes found skipping revision creation.")
 
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
@@ -58,7 +54,6 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        process_revision_directives=process_revision_directives,
     )
 
     with context.begin_transaction():
@@ -87,7 +82,11 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            process_revision_directives=process_revision_directives,
+        )
 
         with context.begin_transaction():
             context.run_migrations()
