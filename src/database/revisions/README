@@ -1,0 +1,5 @@
+Generic single-database configuration.
+
+# alembic revision --autogenerate -m 'lalalala'
+
+# alembic upgrade head

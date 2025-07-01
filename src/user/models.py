@@ -1,6 +1,5 @@
 from sqlmodel import Field
 
-from src.database.core import Base
 from src.database.base import DateTimeMixin
 
 

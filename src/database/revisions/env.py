@@ -7,7 +7,6 @@ from alembic import context
 from sqlmodel import SQLModel
 
 from src.logging import logging
-from src.database.core import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
