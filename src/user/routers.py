@@ -1,3 +1,4 @@
+from typing import Sequence
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 from src.auth.routers import get_current_user
@@ -46,7 +47,7 @@ def read_heroes(
     session: SessionDep,
     offset: int = 0,
     limit: int = Query(default=100, le=100),
-) -> list[User]:
+) -> Sequence[User]:
     users = session.exec(select(User).offset(offset).limit(limit)).all()
     return users
 
