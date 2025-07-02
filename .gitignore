@@ -1,6 +1,7 @@
 .venv
 .vscode
 .DS_Store
+src/database/revisions/versions/*
 docker/postgres_data
 docker/redis_data
 docker/rabbitmq_data
