@@ -6,6 +6,8 @@ docker/postgres_data
 docker/redis_data
 docker/rabbitmq_data
 
+src/database/revisions/versions/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
