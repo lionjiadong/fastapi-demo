@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 from src.auth.routers import get_current_user
 from src.database.core import SessionDep
-from src.user.models.users import User
+from src.user.models.users import User, UserBase, UserIn, UserOut
 
 
 class UserInDB(User):
@@ -35,7 +35,7 @@ async def read_own_items(current_user: User = Depends(get_current_active_user)):
 
 
 @user_router.post("/user/")
-def create_user(user: User, session: SessionDep) -> User:
+def create_user(user: UserIn, session: SessionDep) -> UserBase:
     session.add(user)
     session.commit()
     session.refresh(user)

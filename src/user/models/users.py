@@ -7,7 +7,6 @@ from src.database.base import DateTimeMixin
 class UserBase(SQLModel):
     username: str
     email: EmailStr | None = None
-    active: bool = Field(default=True)
 
 
 class UserIn(UserBase):
