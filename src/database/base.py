@@ -6,7 +6,9 @@ from src.user.models.users import User
 
 class TableBase(SQLModel):
     id: int | None = Field(default=None, primary_key=True)
-    active: bool = Field(default=True, title="是否可用")
+    active: bool = Field(
+        default=True, title="是否有效", description="true有效,反之false"
+    )
 
 
 class DataMixin(SQLModel):

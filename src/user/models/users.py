@@ -24,33 +24,18 @@ class UserIn(UserBase):
 
 class UserOut(UserBase):
     id: int
-    create_time: datetime | None = Field(
-        default_factory=datetime.now,
-        nullable=False,
-        title="创建时间",
-        description="lalalalal",
-        alias="这是alias",
-    )
-    update_time: datetime | None = Field(
-        default_factory=datetime.now, nullable=False, title="更新时间"
-    )
-    delete_time: datetime | None = Field(default=None, nullable=True, title="删除时间")
+    create_time: datetime | None = Field(default_factory=datetime.now, nullable=False)
+    update_time: datetime | None = Field(default_factory=datetime.now, nullable=False)
+    delete_time: datetime | None = Field(default=None, nullable=True)
 
 
 class User(UserBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     active: bool = Field(default=True)
     hashed_password: str
-    create_time: datetime | None = Field(
-        default_factory=datetime.now,
-        nullable=False,
-        title="创建时间",
-        description="lalalalal",
-    )
-    update_time: datetime | None = Field(
-        default_factory=datetime.now, nullable=False, title="更新时间"
-    )
-    delete_time: datetime | None = Field(default=None, nullable=True, title="删除时间")
+    create_time: datetime | None = Field(default_factory=datetime.now, nullable=False)
+    update_time: datetime | None = Field(default_factory=datetime.now, nullable=False)
+    delete_time: datetime | None = Field(default=None, nullable=True)
 
     @model_validator(mode="after")
     def check_passwords_match(self) -> Self:
