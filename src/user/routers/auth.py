@@ -1,12 +1,18 @@
 from datetime import datetime, timedelta, timezone
 
-import bcrypt
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+from src.user.models.auth import Token, TokenData
+from src.user.models.users import User
+from src.user.exception import (
+    authenticate_exception,
+    credentials_exception,
+    inactive_exception,
+)
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token/login")
 
 # to get a string like this run:
 # openssl rand -hex 32
@@ -14,65 +20,12 @@ SECRET_KEY = "724115cd28adcda7840d8a3b42180763d3eb0c9abb26ce2cdbd74d04d85ac8b0"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-fake_users_db = {
-    "123456": {
-        "username": "123456",
-        "full_name": "John Doe",
-        "email": "johndoe@example.com",
-        "hashed_password": "$2a$10$x/2cs4yNlPxphxHRyeAM1u1DMLkggWJj/jz560AiKNfN3.Adjb6sq",
-        "disabled": False,
-    }
-}
-
 auth_router = APIRouter(
     prefix="/token",
     tags=["token"],
     # dependencies=[Depends(get_token_header)],
     responses={404: {"description": "Not found"}},
 )
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-
-class TokenData(BaseModel):
-    username: str | None = None
-
-
-class User(BaseModel):
-    username: str
-    email: str | None = None
-    full_name: str | None = None
-    disabled: bool | None = None
-
-
-class UserInDB(User):
-    hashed_password: str
-
-
-def verify_password(plain_password, hashed_password):
-    # plain_password = plain_password.encode("utf-8")
-    # hashed_password = plain_password.encode("utf-8")
-    return bcrypt.checkpw(
-        plain_password.encode("utf-8"), hashed_password.encode("utf-8")
-    )
-
-
-def get_user(db, username: str):
-    if username in db:
-        user_dict = db[username]
-        return UserInDB(**user_dict)
-
-
-def authenticate_user(fake_db, username: str, password: str):
-    user = get_user(fake_db, username)
-    if not user:
-        return False
-    if not verify_password(password, user.hashed_password):
-        return False
-    return user
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
@@ -87,38 +40,29 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username = payload.get("sub")
-        if username is None:
+        user_id = payload.get("sub")
+        if user_id is None:
             raise credentials_exception
-        token_data = TokenData(username=username)
+        token_data = TokenData(user_id=user_id)
     except jwt.InvalidTokenError:
         raise credentials_exception
-    user = get_user(fake_users_db, username=token_data.username)
+    user = User.get_user(user_id=token_data.user_id)
     if user is None:
-        raise credentials_exception
+        raise inactive_exception
     return user
 
 
-@auth_router.post("/")
+@auth_router.post("/login")
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
 ) -> Token:
-    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+    user = User.authenticate_user(form_data.username, form_data.password)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise authenticate_exception
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
+        data={"sub": user.id}, expires_delta=access_token_expires
     )
     return Token(access_token=access_token, token_type="bearer")

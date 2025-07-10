@@ -1,0 +1,20 @@
+from fastapi import HTTPException, status
+
+
+authenticate_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="用户名或密码错误.",
+    headers={"WWW-Authenticate": "Bearer"},
+)
+
+credentials_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="无法验证凭据.",
+    headers={"WWW-Authenticate": "Bearer"},
+)
+
+inactive_exception = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="无效用户",
+    headers={"WWW-Authenticate": "Bearer"},
+)
