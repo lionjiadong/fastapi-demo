@@ -1,5 +1,5 @@
 .venv
-.vscode
+# .vscode
 .DS_Store
 src/database/revisions/versions/*.py
 docker/postgres_data
