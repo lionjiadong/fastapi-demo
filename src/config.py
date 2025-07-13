@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     access_token_algorithm: str
     access_token_expire_minutes: int
 
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict(env_file="local.env")
 
 
 # @lru_cache
@@ -22,4 +22,4 @@ class Settings(BaseSettings):
 
 
 # setting = Annotated[Settings, Depends(get_settings)]
-settings = Settings()  # pyright: ignore[reportCallIssue]
+settings: Settings = Settings()  # pyright: ignore[reportCallIssue]

@@ -8,7 +8,7 @@ user_router = APIRouter(
     prefix="/users",
     tags=["user"],
     # dependencies=[Depends(get_token_header)],
-    responses={404: {"description": "Not found"}},
+    responses={404: {"description": "Not found"}, 401: {"description": "未提供TOKEN"}},
 )
 
 
@@ -19,7 +19,7 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 
 
 @user_router.get("/me")
-async def read_users_me(current_user: User = Depends(get_current_active_user)) -> User:
+async def read_users_me(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 

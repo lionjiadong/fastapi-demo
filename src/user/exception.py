@@ -18,3 +18,9 @@ inactive_exception = HTTPException(
     detail="无效用户",
     headers={"WWW-Authenticate": "Bearer"},
 )
+
+no_token_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="未提供Token",
+    headers={"WWW-Authenticate": "Bearer"},
+)

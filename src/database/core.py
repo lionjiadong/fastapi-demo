@@ -1,10 +1,12 @@
 from typing import Annotated
 
 from fastapi import Depends
-from sqlmodel import Session, create_engine, inspect
+from sqlmodel import Session, create_engine
+from src.config import settings
 
 
-database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/fastapi_demo"
+# database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/fastapi_demo"
+database_url: str = settings.database_url
 engine = create_engine(database_url)
 
 
