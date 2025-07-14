@@ -4,6 +4,8 @@ import bcrypt
 from pydantic import (
     EmailStr,
     ModelWrapValidatorHandler,
+    ValidationInfo,
+    field_validator,
     model_validator,
 )
 from sqlmodel import Field, SQLModel, Session, select
@@ -11,7 +13,7 @@ from src.database.core import engine
 
 
 class UserBase(SQLModel):
-    username: str
+    username: str = Field(unique=True)
     email: EmailStr | None = None
 
 
@@ -34,14 +36,25 @@ class User(UserBase, table=True):
     update_time: datetime | None = Field(default_factory=datetime.now, nullable=False)
     delete_time: datetime | None = Field(default=None, nullable=True)
 
-    @model_validator(mode="after")
-    def check_passwords_match(self) -> Self:
-        return self
+    # @model_validator(mode="after")
+    # def check_passwords_match(self) -> Self:
+    #     return self
 
-    @model_validator(mode="before")
+    # @model_validator(mode="before")
+    # @classmethod
+    # def check_card_number_not_present(cls, data: UserIn | dict) -> Any:
+    #     return data
+
+    @field_validator("username", mode="before")
     @classmethod
-    def check_card_number_not_present(cls, data: UserIn | dict) -> Any:
-        return data
+    def username_validate_unique(cls, value: str, info: ValidationInfo) -> str:
+        with Session(engine) as session:
+            user = session.exec(
+                select(cls).where(cls.username == value).where(cls.active == True)
+            ).first()
+        if user:
+            raise ValueError("username already exists")
+        return value
 
     @model_validator(mode="wrap")
     @classmethod
