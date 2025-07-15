@@ -33,4 +33,4 @@ class UserMixin(SQLModel):
     delete_user_id: int | None = Field(
         default=None, foreign_key="user.id", title="删除用户"
     )
-    user: User | None = Relationship()
+    # user: User | None = Relationship()
