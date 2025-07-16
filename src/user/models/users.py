@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Self
+from typing import TYPE_CHECKING, Any, Self, List
 import bcrypt
 from pydantic import (
     EmailStr,
@@ -8,8 +8,13 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlmodel import Field, SQLModel, Session, select
+from sqlmodel import Field, Relationship, SQLModel, Session, select
 from src.database.core import engine
+
+# from src.user.models.auth import UserRoleLink
+
+if TYPE_CHECKING:
+    from src.user.models.auth import UserRoleLink, Role
 
 
 class UserBase(SQLModel):
@@ -48,6 +53,8 @@ class User(UserBase, table=True):
         default_factory=datetime.now, nullable=False, title="更新时间"
     )
     delete_time: datetime | None = Field(default=None, nullable=True, title="删除时间")
+
+    roles: List["Role"] = Relationship(back_populates="users", link_model=UserRoleLink)
 
     # @model_validator(mode="after")
     # def check_passwords_match(self) -> Self:

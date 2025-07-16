@@ -72,7 +72,7 @@ def run_migrations_online() -> None:
         script = directives[0]
         if script.upgrade_ops.is_empty():
             directives[:] = []
-            log.info("No changes found skipping revision creation.")
+            print("No changes found skipping revision creation.")
 
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
