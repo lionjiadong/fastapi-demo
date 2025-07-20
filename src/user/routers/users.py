@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import select
 from src.user.routers.auth import get_current_user
 from src.database.core import SessionDep
-from src.user.models.users import User, UserBase, UserIn, UserOut
+from src.user.models.user import User, UserBase, UserIn, UserOut
 
 user_router = APIRouter(
     prefix="/users",
