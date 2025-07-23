@@ -3,14 +3,14 @@ from typing import TYPE_CHECKING
 from sqlmodel import Field, Relationship, SQLModel
 
 
-class TableBase(SQLModel):
+class PrimaryKeyMixin(SQLModel):
     id: int | None = Field(default=None, primary_key=True)
     active: bool = Field(
         default=True, title="是否有效", description="true有效,反之false"
     )
 
 
-class DataMixin(SQLModel):
+class DateMixin(SQLModel):
     create_time: datetime | None = Field(
         default_factory=datetime.now, nullable=False, title="创建时间"
     )
@@ -30,3 +30,11 @@ class UserMixin(SQLModel):
     delete_user_id: int | None = Field(
         default=None, foreign_key="user.id", title="删除用户"
     )
+
+
+class UserDateMixin(UserMixin, DateMixin):
+    pass
+
+
+class UserDateMixinOutMixin(UserDateMixin, SQLModel):
+    id: int

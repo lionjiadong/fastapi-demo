@@ -4,9 +4,9 @@ import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
-from src.user.models.auth import Token, TokenData
-from src.user.models.user import User
-from src.user.exception import (
+from src.auth.models.auth import Token, TokenData
+from src.auth.models.user import User
+from src.auth.exception import (
     authenticate_exception,
     credentials_exception,
     inactive_exception,

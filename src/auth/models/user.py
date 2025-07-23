@@ -11,10 +11,10 @@ from pydantic import (
 from sqlmodel import Field, Relationship, SQLModel, Session, select
 from src.database.core import engine
 
-from src.user.models.links import UserRoleLink
+from src.auth.models.links import UserRoleLink
 
 if TYPE_CHECKING:
-    from src.user.models.role import Role
+    from src.auth.models.role import Role
 
 
 class UserBase(SQLModel):
