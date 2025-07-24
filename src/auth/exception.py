@@ -24,3 +24,9 @@ no_token_exception = HTTPException(
     detail="未提供Token",
     headers={"WWW-Authenticate": "Bearer"},
 )
+
+token_expired_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Token已过期",
+    headers={"WWW-Authenticate": "Bearer"},
+)

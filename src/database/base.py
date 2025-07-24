@@ -5,6 +5,9 @@ from sqlmodel import Field, Relationship, SQLModel
 
 class PrimaryKeyMixin(SQLModel):
     id: int | None = Field(default=None, primary_key=True)
+
+
+class ActiveMixin(SQLModel):
     active: bool = Field(
         default=True, title="是否有效", description="true有效,反之false"
     )
@@ -32,9 +35,9 @@ class UserMixin(SQLModel):
     )
 
 
-class UserDateMixin(UserMixin, DateMixin):
+class GeneralTableMixin(PrimaryKeyMixin, UserMixin, DateMixin, ActiveMixin):
     pass
 
 
-class UserDateMixinOutMixin(UserDateMixin, SQLModel):
+class GeneralOutMixin(UserMixin, DateMixin, ActiveMixin):
     id: int

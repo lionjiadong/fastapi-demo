@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, cast, List
 from sqlmodel import Relationship, SQLModel, Field
-from src.database.base import PrimaryKeyMixin, UserDateMixin, UserDateMixinOutMixin
+from src.database.base import GeneralOutMixin, GeneralTableMixin
 from src.auth.models.links import UserRoleLink
 
 if TYPE_CHECKING:
@@ -12,9 +12,9 @@ class RoleBase(SQLModel):
     code: str
 
 
-class RoleOut(UserDateMixinOutMixin):
-    id: int
+class RoleOut(GeneralOutMixin):
+    pass
 
 
-class Role(PrimaryKeyMixin, RoleBase, UserDateMixin, table=True):
+class Role(GeneralTableMixin, table=True):
     users: List["User"] = Relationship(back_populates="roles", link_model=UserRoleLink)

@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, Self, List
 import bcrypt
 from pydantic import (
@@ -8,8 +7,11 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import Field, Relationship, SQLModel, Session, select
+from src.database.base import ActiveMixin, DateMixin, PrimaryKeyMixin
 from src.database.core import engine
+from src.auth.exception import authenticate_exception
 
 from src.auth.models.links import UserRoleLink
 
@@ -22,98 +24,74 @@ class UserBase(SQLModel):
     email: EmailStr | None = None
 
 
-class UserIn(UserBase):
+class UserCreate(UserBase):
     password: str
 
 
-class UserOut(UserBase):
+class UserOut(UserBase, ActiveMixin, DateMixin):
     id: int
-    create_time: datetime | None = Field(
-        default_factory=datetime.now,
-        nullable=False,
-        title="创建时间",
-    )
-    update_time: datetime | None = Field(
-        default_factory=datetime.now, nullable=False, title="更新时间"
-    )
-    delete_time: datetime | None = Field(default=None, nullable=True, title="删除时间")
 
 
-class User(UserBase, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    active: bool = Field(default=True)
+class User(UserBase, PrimaryKeyMixin, ActiveMixin, DateMixin, table=True):
     hashed_password: str
 
-    create_time: datetime | None = Field(
-        default_factory=datetime.now,
-        nullable=False,
-        title="创建时间",
+    roles: List["Role"] = Relationship(
+        back_populates="users",
+        link_model=UserRoleLink,
+        sa_relationship_kwargs={"lazy": "selectin"},
     )
-    update_time: datetime | None = Field(
-        default_factory=datetime.now, nullable=False, title="更新时间"
-    )
-    delete_time: datetime | None = Field(default=None, nullable=True, title="删除时间")
 
-    roles: List["Role"] = Relationship(back_populates="users", link_model=UserRoleLink)
+    async def check_pwd(self, password: str) -> Self:
+        if not bcrypt.checkpw(
+            password.encode("utf-8"), self.hashed_password.encode("utf-8")
+        ):
+            raise authenticate_exception
+        return self
 
-    # @model_validator(mode="after")
-    # def check_passwords_match(self) -> Self:
-    #     return self
-
-    # @model_validator(mode="before")
-    # @classmethod
-    # def check_card_number_not_present(cls, data: UserIn | dict) -> Any:
-    #     return data
-
-    @field_validator("username", mode="before")
     @classmethod
-    def username_validate_unique(cls, value: str, info: ValidationInfo) -> str:
-        with Session(engine) as session:
-            user = session.exec(
-                select(cls).where(cls.username == value).where(cls.active == True)
+    async def get_user(cls, user_id: int) -> Self | None:
+        async with AsyncSession(engine) as session:
+            user_db = (
+                await session.exec(
+                    select(cls).where(cls.id == user_id).where(cls.active == True)
+                )
             ).first()
-        if user:
-            raise ValueError("username already exists")
-        return value
-
-    @model_validator(mode="wrap")
-    @classmethod
-    def log_failed_validation(
-        cls, data: Any, handler: ModelWrapValidatorHandler[Self]
-    ) -> Self:
-        if "password" in data:
-            data["hashed_password"] = cls.hash_pwd(data["password"])
-        return handler(data)
-
-    @staticmethod
-    def hash_pwd(password: str) -> str:
-        return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-
-    def check_pwd(self, password: str) -> Self | None:
-        return (
-            self
-            if bcrypt.checkpw(
-                password.encode("utf-8"), self.hashed_password.encode("utf-8")
-            )
-            else None
-        )
-
-    @classmethod
-    def authenticate_user(cls, username, password: str) -> Self | None:
-        with Session(engine) as session:
-            user_db = session.exec(select(cls).where(cls.username == username)).first()
-        if not user_db:
-            return None
-        user = cls.model_validate(user_db).check_pwd(password)
+            if not user_db:
+                return None
+            user = cls.model_validate(user_db)
         return user
 
-    @classmethod
-    def get_user(cls, user_id: int) -> Self | None:
-        with Session(engine) as session:
-            user_db = session.exec(
-                select(cls).where(cls.id == user_id).where(cls.active == True)
-            ).first()
-        if not user_db:
-            return None
-        user = cls.model_validate(user_db)
-        return user
+
+# class UserUpdate(User):
+#     # @model_validator(mode="after")
+#     # def check_passwords_match(self) -> Self:
+#     #     return self
+
+#     # @model_validator(mode="before")
+#     # @classmethod
+#     # def check_card_number_not_present(cls, data: UserIn | dict) -> Any:
+#     #     return data
+
+#     @field_validator("username", mode="before")
+#     @classmethod
+#     def username_validate_unique(cls, value: str, info: ValidationInfo) -> str:
+#         with Session(engine) as session:
+#             user = session.exec(
+#                 select(cls).where(cls.username == value).where(cls.active == True)
+#             ).first()
+#         if user:
+#             raise ValueError("username already exists")
+#         return value
+
+#     @model_validator(mode="wrap")
+#     @classmethod
+#     def log_failed_validation(
+#         cls, data: Any, handler: ModelWrapValidatorHandler[Self]
+#     ) -> Self:
+#         if "password" in data:
+#             data["hashed_password"] = cls.hash_pwd(data["password"])
+#         return handler(data)
+
+#     @staticmethod
+#     def hash_pwd(password: str) -> str:
+#         return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")

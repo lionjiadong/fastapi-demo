@@ -1,21 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlmodel import select
-from src.auth.routers.auth import get_current_user
+from src.auth.models.auth import get_current_user, invalid_token
 from src.database.core import SessionDep
-from src.auth.models.user import User, UserBase, UserIn, UserOut
+from src.auth.models.user import User, UserBase, UserCreate, UserOut
 
 user_router = APIRouter(
     prefix="/users",
     tags=["user"],
-    # dependencies=[Depends(get_token_header)],
+    dependencies=[Depends(get_current_user)],
     responses={404: {"description": "Not found"}, 401: {"description": "未提供TOKEN"}},
 )
-
-
-async def get_current_active_user(current_user: User = Depends(get_current_user)):
-    if current_user.active:
-        return current_user
-    raise HTTPException(status_code=400, detail="Inactive user")
 
 
 @user_router.get("/me")
@@ -25,10 +19,12 @@ async def read_users_me(current_user: User = Depends(get_current_user)) -> User:
 
 @user_router.get("/", response_model=list[UserOut])
 async def read_users(
+    request: Request,
     session: SessionDep,
     offset: int = 0,
     limit: int = Query(default=100, le=100),
 ):
+    print(request.state.user)
     users = session.exec(select(User).offset(offset).limit(limit)).all()
     return users
 
@@ -42,7 +38,7 @@ async def read_user(user_id: int, session: SessionDep):
 
 
 @user_router.post("/", response_model=UserOut)
-async def create_user(user: UserIn, session: SessionDep):
+async def create_user(user: UserCreate, session: SessionDep):
     db_user = User.model_validate(user.model_dump())
     session.add(db_user)
     session.commit()

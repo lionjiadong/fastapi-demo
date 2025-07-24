@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from jwt import ExpiredSignatureError
 from pydantic import ValidationError
 
 
@@ -19,10 +20,11 @@ app = FastAPI(
             allow_origins=["*"],
             allow_methods=["*"],
             allow_headers=["*"],
-        )
+        ),
     ],
     exception_handlers={
         ValidationError: validation_exception_handler,
+        # ExpiredSignatureError: token_expired_exception_handler,
     },
     docs_url=None,
     redoc_url=None,
