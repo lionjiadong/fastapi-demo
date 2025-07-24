@@ -25,7 +25,7 @@ async def read_users(
     limit: int = Query(default=100, le=100),
 ):
     print(request.state.user)
-    users = session.exec(select(User).offset(offset).limit(limit)).all()
+    users = (await session.exec(select(User).offset(offset).limit(limit))).all()
     return users
 
 
