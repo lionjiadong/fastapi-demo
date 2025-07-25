@@ -41,29 +41,29 @@ async def read_user(user_id: int, session: SessionDep):
 async def create_user(user: UserCreate, session: SessionDep):
     db_user = User.model_validate(user.model_dump())
     session.add(db_user)
-    session.commit()
-    session.refresh(db_user)
+    await session.commit()
+    await session.refresh(db_user)
     return db_user
 
 
 @user_router.patch("/{user_id}", response_model=UserOut)
 async def update_user(user_id: int, user: UserBase, session: SessionDep):
-    user_db = session.get(User, user_id)
+    user_db = await session.get(User, user_id)
     if not user_db:
         raise HTTPException(status_code=404, detail="User not found")
     user_data = user.model_dump(exclude_unset=True)
     user_db.sqlmodel_update(user_data)
     session.add(user_db)
-    session.commit()
-    session.refresh(user_db)
+    await session.commit()
+    await session.refresh(user_db)
     return user_db
 
 
 @user_router.delete("/{user_id}")
 async def delete_user(user_id: int, session: SessionDep):
-    user = session.get(User, user_id)
+    user = await session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    session.delete(user)
-    session.commit()
+    await session.delete(user)
+    await session.commit()
     return {"ok": True}
