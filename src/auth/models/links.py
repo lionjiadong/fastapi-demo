@@ -1,6 +1,6 @@
 from sqlmodel import Relationship, SQLModel, Field
 from sqlalchemy.orm import declared_attr
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 
 class UserRoleLink(SQLModel, table=True):

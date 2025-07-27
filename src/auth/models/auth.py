@@ -4,16 +4,16 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel.ext.asyncio.session import AsyncSession
 from pydantic import BaseModel
-from sqlmodel import Session, select
+from sqlmodel import select
 from src.config import settings
 from src.database.core import engine
 from src.auth.exception import (
     authenticate_exception,
     credentials_exception,
-    inactive_exception,
     no_token_exception,
     token_expired_exception,
 )
+
 from src.auth.models.user import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
@@ -81,8 +81,5 @@ async def invalid_token(token: str = Depends(get_token_header)) -> TokenData:
 async def get_current_user(
     request: Request, token_data: TokenData = Depends(invalid_token)
 ) -> User:
-    user = User.get_user(user_id=token_data.user_id)
-    if user is None:
-        raise inactive_exception
-    request.state.user = user
-    return user
+    print(f"get_current_user: {token_data.user_id}")
+    return await User.get_user(user_id=token_data.user_id)

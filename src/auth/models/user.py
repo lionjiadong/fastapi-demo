@@ -1,17 +1,15 @@
-from typing import TYPE_CHECKING, Any, Self, List
+from typing import TYPE_CHECKING, Any, Self
 import bcrypt
 from pydantic import (
     EmailStr,
     ModelWrapValidatorHandler,
-    ValidationInfo,
-    field_validator,
     model_validator,
 )
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import Field, Relationship, SQLModel, Session, select
-from src.database.base import ActiveMixin, DateMixin, PrimaryKeyMixin
+from sqlmodel import Field, Relationship, SQLModel, select
+from src.database.base import TableMixin, OutMixin
 from src.database.core import engine
-from src.auth.exception import authenticate_exception
+from src.auth.exception import authenticate_exception, inactive_exception
 
 from src.auth.models.links import UserRoleLink
 
@@ -28,14 +26,19 @@ class UserCreate(UserBase):
     password: str
 
 
-class UserOut(UserBase, ActiveMixin, DateMixin):
+class UserUpdate(SQLModel):
+    username: str | None = None
+    email: EmailStr | None = None
+
+
+class UserOut(UserBase, OutMixin):
     id: int
 
 
-class User(UserBase, PrimaryKeyMixin, ActiveMixin, DateMixin, table=True):
+class User(UserBase, TableMixin, table=True):
     hashed_password: str
 
-    roles: List["Role"] = Relationship(
+    roles: list["Role"] = Relationship(
         back_populates="users",
         link_model=UserRoleLink,
         sa_relationship_kwargs={"lazy": "selectin"},
@@ -48,8 +51,21 @@ class User(UserBase, PrimaryKeyMixin, ActiveMixin, DateMixin, table=True):
             raise authenticate_exception
         return self
 
+    @staticmethod
+    def hash_pwd(password: str) -> str:
+        return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+    @model_validator(mode="wrap")
     @classmethod
-    async def get_user(cls, user_id: int) -> Self | None:
+    def log_failed_validation(
+        cls, data: Any, handler: ModelWrapValidatorHandler[Self]
+    ) -> Self:
+        if "password" in data:
+            data["hashed_password"] = cls.hash_pwd(data["password"])
+        return handler(data)
+
+    @classmethod
+    async def get_user(cls, user_id: int) -> Self:
         async with AsyncSession(engine) as session:
             user_db = (
                 await session.exec(
@@ -57,41 +73,6 @@ class User(UserBase, PrimaryKeyMixin, ActiveMixin, DateMixin, table=True):
                 )
             ).first()
             if not user_db:
-                return None
+                raise inactive_exception
             user = cls.model_validate(user_db)
         return user
-
-
-# class UserUpdate(User):
-#     # @model_validator(mode="after")
-#     # def check_passwords_match(self) -> Self:
-#     #     return self
-
-#     # @model_validator(mode="before")
-#     # @classmethod
-#     # def check_card_number_not_present(cls, data: UserIn | dict) -> Any:
-#     #     return data
-
-#     @field_validator("username", mode="before")
-#     @classmethod
-#     def username_validate_unique(cls, value: str, info: ValidationInfo) -> str:
-#         with Session(engine) as session:
-#             user = session.exec(
-#                 select(cls).where(cls.username == value).where(cls.active == True)
-#             ).first()
-#         if user:
-#             raise ValueError("username already exists")
-#         return value
-
-#     @model_validator(mode="wrap")
-#     @classmethod
-#     def log_failed_validation(
-#         cls, data: Any, handler: ModelWrapValidatorHandler[Self]
-#     ) -> Self:
-#         if "password" in data:
-#             data["hashed_password"] = cls.hash_pwd(data["password"])
-#         return handler(data)
-
-#     @staticmethod
-#     def hash_pwd(password: str) -> str:
-#         return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")

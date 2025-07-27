@@ -1,3 +1,10 @@
 {
-  "cSpell.words": ["gensalt", "hashpw", "poolclass", "redoc", "sessionmaker"]
+  "cSpell.words": [
+    "gensalt",
+    "hashpw",
+    "poolclass",
+    "redoc",
+    "sessionmaker",
+    "syncify"
+  ]
 }
