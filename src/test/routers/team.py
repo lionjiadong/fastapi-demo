@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, Request
 from sqlmodel import select
 from src.database.core import SessionDep
-from src.test.models.team import TeamOut, Team, TeamBase
+from src.test.models.team import TeamOut, Team
 
 team_router = APIRouter(
     prefix="/team",

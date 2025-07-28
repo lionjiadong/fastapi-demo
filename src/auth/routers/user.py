@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Query
 from sqlmodel import select
 from src.auth.models.auth import get_current_user
 from src.database.core import SessionDep
