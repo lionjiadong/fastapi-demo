@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Query
 from sqlmodel import select
 from src.auth.models.auth import get_current_user
+from src.auth.models.user import User
 from src.database.core import SessionDep
-from src.auth.models.user import User, UserCreate, UserOut, UserUpdate
+from src.auth.schemas.user import UserCreate, UserOutLinks, UserUpdate
 
 user_router = APIRouter(
     prefix="/users",
@@ -11,12 +12,12 @@ user_router = APIRouter(
 )
 
 
-@user_router.get("/me")
-async def read_users_me(current_user: User = Depends(get_current_user)) -> User:
+@user_router.get("/me", response_model=UserOutLinks)
+async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@user_router.get("/", response_model=list[UserOut])
+@user_router.get("/", response_model=list[UserOutLinks])
 async def read_users(
     session: SessionDep,
     offset: int = 0,
@@ -26,7 +27,7 @@ async def read_users(
     return users
 
 
-@user_router.post("/", response_model=UserOut)
+@user_router.post("/", response_model=UserOutLinks)
 async def create_user(
     data: UserCreate,
     session: SessionDep,
@@ -36,12 +37,12 @@ async def create_user(
     return await user.create(session, current_user)
 
 
-@user_router.get("/{user_id}", response_model=UserOut)
+@user_router.get("/{user_id}", response_model=UserOutLinks)
 async def read_user(user_id: int, session: SessionDep):
     return await User.get_by_id(session, user_id)
 
 
-@user_router.patch("/{user_id}", response_model=UserOut)
+@user_router.patch("/{user_id}", response_model=UserOutLinks)
 async def update_user(
     user_id: int,
     data: UserUpdate,

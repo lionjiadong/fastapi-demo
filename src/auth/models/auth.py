@@ -81,5 +81,4 @@ async def invalid_token(token: str = Depends(get_token_header)) -> TokenData:
 async def get_current_user(
     request: Request, token_data: TokenData = Depends(invalid_token)
 ) -> User:
-    print(f"get_current_user: {token_data.user_id}")
     return await User.get_user(user_id=token_data.user_id)

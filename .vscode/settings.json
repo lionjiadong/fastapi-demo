@@ -4,6 +4,7 @@
     "hashpw",
     "poolclass",
     "redoc",
+    "selectin",
     "sessionmaker",
     "syncify"
   ]

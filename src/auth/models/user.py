@@ -7,10 +7,9 @@ from pydantic import (
 )
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import Field, Relationship, SQLModel, select
-from src.database.base import TableMixin, OutMixin
+from src.database.base import OutMixin, TableMixin
 from src.database.core import engine
 from src.auth.exception import authenticate_exception, inactive_exception
-
 from src.auth.models.links import UserRoleLink
 
 if TYPE_CHECKING:
@@ -22,17 +21,8 @@ class UserBase(SQLModel):
     email: EmailStr | None = None
 
 
-class UserCreate(UserBase):
-    password: str
-
-
-class UserUpdate(SQLModel):
-    username: str | None = None
-    email: EmailStr | None = None
-
-
 class UserOut(UserBase, OutMixin):
-    id: int
+    pass
 
 
 class User(UserBase, TableMixin, table=True):
