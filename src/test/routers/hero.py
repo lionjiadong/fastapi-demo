@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Query
 from sqlmodel import select
 from src.database.core import SessionDep
-from src.test.models.hero import HeroOut, Hero, HeroBase
+from src.test.models.hero import HeroOut, Hero
 
 hero_router = APIRouter(
     prefix="/hero",
