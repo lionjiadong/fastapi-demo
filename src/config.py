@@ -13,6 +13,11 @@ class Settings(BaseSettings):
     access_token_algorithm: str
     access_token_expire_minutes: int
 
+    # celery
+    broker_url: str
+    result_backend: str
+    worker_send_task_events: bool
+
     model_config = SettingsConfigDict(env_file="local.env")
 
 

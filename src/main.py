@@ -7,7 +7,6 @@ from pydantic import ValidationError
 
 from src.exceptions import (
     validation_exception_handler,
-    request_validation_exception_handler,
 )
 
 from .api import api_router

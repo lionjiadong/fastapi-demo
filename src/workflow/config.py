@@ -2,7 +2,9 @@
 broker_url = "redis://localhost:6379/0"
 
 # 结果后端设置
-result_backend = "db+postgresql+psycopg://postgres:postgres@localhost/fastapi_demo"
+result_backend = "redis://localhost:6379/1"
+# 将在设置期间在数据库中创建表
+database_create_tables_at_setup = True
 
 # 内容类型/序列化器的白名单，以允许结果后端。
 # result_accept_content = ["json"]
