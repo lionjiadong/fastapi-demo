@@ -1,5 +1,7 @@
+import time
 from celery import Celery, group, signature
 from src.config import settings
+from celery.exceptions import Reject
 
 app = Celery("liangjiadong")
 app.config_from_object("src.config.settings")
@@ -8,10 +10,26 @@ app.autodiscover_tasks(["src.auth"])
 # print(app._conf)
 
 
-@app.task(name="test_func")
-def test_func(x, y):
+@app.task(name="test_func13")
+def test_func13():
+    time.sleep(5)
+    print("lalalala")
+
+
+@app.task(
+    bind=True,
+    name="test_func",
+    autoretry_for=(Reject,),
+    default_retry_delay=2,
+    max_retries=1,
+)
+def test_func(self, x, y):
     print(x, y)
-    return x + y
+    # s = app.signature("test_func13")
+    # s.apply_async()
+    time.sleep(3)
+    # int("abc")
+    # raise Reject("no reason", requeue=False)
 
 
 # res = group(sig, sig)
@@ -19,3 +37,4 @@ def test_func(x, y):
 
 # --ignore-patterns='test_run.py'
 # watchmedo auto-restart --pattern='tasks.py;workflow' --recursive -- celery -A src.workflow.app worker --concurrency=4 --loglevel=INFO
+# watchmedo auto-restart --pattern='tasks.py;workflow' --recursive -- python ./src/workflow/events.py

@@ -15,10 +15,15 @@ class Settings(BaseSettings):
 
     # celery
     broker_url: str
+    broker_connection_max_retries: int | None
     result_backend: str
     worker_send_task_events: bool
+    task_send_sent_event: bool
+    task_acks_late: bool
+    task_track_started: bool
+    enable_utc: bool
 
-    model_config = SettingsConfigDict(env_file="local.env")
+    model_config = SettingsConfigDict(env_file="local.env", env_parse_none_str="None")
 
 
 # @lru_cache
