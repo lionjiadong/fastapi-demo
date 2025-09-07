@@ -1,4 +1,5 @@
 from src.auth.models import links
+from src.test.models.test import TestField
 from src.workflow.app import app, test_func
 from celery import group, signature
 import datetime
@@ -17,9 +18,10 @@ import datetime
 # # print(g)
 # print(g.apply_async().get())
 
-s = app.signature("test_func", args=(1, 2), immutable=True)
-s1 = app.signature("test_func13")
-# s1.apply_async(link=s)
-# s.apply_async()
-res = group(s, s1)
-res()
+# s = app.signature("test_func", args=(1, 2), immutable=True)
+# s1 = app.signature("test_func13")
+# # s1.apply_async(link=s)
+# # s.apply_async()
+# res = group(s, s1)
+# res()
+TestField(strict_bool_field=None, bool_field=None)

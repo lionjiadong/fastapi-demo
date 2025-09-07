@@ -29,7 +29,7 @@ def test_func(self, x, y):
     # s.apply_async()
     time.sleep(3)
     # int("abc")
-    # raise Reject("no reason", requeue=False)
+    raise Reject("no reason", requeue=False)
 
 
 # res = group(sig, sig)
