@@ -59,7 +59,9 @@ async def update_user(
 
 @user_router.delete("/{user_id}")
 async def delete_user(
-    user_id: int, session: SessionDep, current_user: User = Depends(get_current_user)
+    user_id: int,
+    session: SessionDep,
+    current_user: User = Depends(get_current_user),
 ):
     user = await User.get_by_id(session, user_id)
     await user.delete(session=session, current_user=current_user)

@@ -1,7 +1,9 @@
 import time
+
 from celery import Celery, group, signature
-from src.config import settings
 from celery.exceptions import Reject
+
+from src.config import settings
 
 app = Celery("liangjiadong")
 app.config_from_object("src.config.settings")
@@ -12,7 +14,7 @@ app.autodiscover_tasks(["src.auth"])
 
 @app.task(name="test_func13")
 def test_func13():
-    time.sleep(5)
+    time.sleep(3)
     print("lalalala")
 
 
@@ -27,7 +29,7 @@ def test_func(self, x, y):
     print(x, y)
     # s = app.signature("test_func13")
     # s.apply_async()
-    time.sleep(3)
+    # time.sleep(3)
     # int("abc")
     raise Reject("no reason", requeue=False)
 
@@ -38,3 +40,6 @@ def test_func(self, x, y):
 # --ignore-patterns='test_run.py'
 # watchmedo auto-restart --pattern='tasks.py;workflow' --recursive -- celery -A src.workflow.app worker --concurrency=4 --loglevel=INFO
 # watchmedo auto-restart --pattern='tasks.py;workflow' --recursive -- python ./src/workflow/events.py
+
+# watchmedo auto-restart --pattern='**/tasks.py;**/workflow/**' --recursive -- celery -A src.workflow.app worker --concurrency=4 --loglevel=INFO
+# watchmedo auto-restart --pattern='**/tasks.py;src/workflow/**;src/workflow/models/**' --recursive -- python ./src/workflow/events.py

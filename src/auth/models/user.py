@@ -8,7 +8,7 @@ from pydantic import (
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import Field, Relationship, SQLModel, select
 from src.database.base import OutMixin, TableMixin
-from src.database.core import engine
+from src.database.core import async_engine
 from src.auth.exception import authenticate_exception, inactive_exception
 from src.auth.models.links import UserRoleLink
 
@@ -56,7 +56,7 @@ class User(UserBase, TableMixin, table=True):
 
     @classmethod
     async def get_user(cls, user_id: int) -> Self:
-        async with AsyncSession(engine) as session:
+        async with AsyncSession(async_engine) as session:
             user_db = (
                 await session.exec(
                     select(cls).where(cls.id == user_id).where(cls.active == True)

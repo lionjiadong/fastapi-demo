@@ -1,5 +1,6 @@
 from functools import lru_cache
 from typing import Annotated
+
 from fastapi import Depends
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -22,6 +23,7 @@ class Settings(BaseSettings):
     task_acks_late: bool
     task_track_started: bool
     enable_utc: bool
+    timezone: str
 
     model_config = SettingsConfigDict(env_file="local.env", env_parse_none_str="None")
 

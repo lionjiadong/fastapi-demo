@@ -6,7 +6,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from pydantic import BaseModel
 from sqlmodel import select
 from src.config import settings
-from src.database.core import engine
+from src.database.core import async_engine
 from src.auth.exception import (
     authenticate_exception,
     credentials_exception,
@@ -29,7 +29,7 @@ class TokenData(BaseModel):
 
 
 async def authenticate_user(username: str, password: str) -> User:
-    async with AsyncSession(engine) as session:
+    async with AsyncSession(async_engine) as session:
         user_db = (
             await session.exec(select(User).where(User.username == username))
         ).first()
