@@ -1,19 +1,43 @@
 import datetime
 import decimal
+import enum
+from typing import Any
 
 from celery.events.state import Task
-from pydantic import UUID4, AwareDatetime, JsonValue
-from sqlmodel import JSON, Column, DateTime, Field, Relationship, SQLModel, select
+from pydantic import UUID4, Json
+from sqlmodel import JSON, UUID, Column, DateTime, Enum, Field, SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.database.core import async_engine
 
 
+class TaskStateEnum(str, enum.Enum):
+    #: Task state is unknown (assumed pending since you know the id).
+    PENDING = "PENDING"
+    #: Task was received by a worker (only used in events).
+    RECEIVED = "RECEIVED"
+    #: Task was started by a worker (:setting:`task_track_started`).
+    STARTED = "STARTED"
+    #: Task succeeded
+    SUCCESS = "SUCCESS"
+    #: Task failed
+    FAILURE = "FAILURE"
+    #: Task was revoked.
+    REVOKED = "REVOKED"
+    #: Task was rejected (only used in events).
+    REJECTED = "REJECTED"
+    #: Task is waiting for retry.
+    RETRY = "RETRY"
+
+
 class TaskBase(SQLModel, table=True):
-    # tid: int = Field(primary_key=True)
-    id: UUID4 = Field(primary_key=True)
-    name: str | None = Field(default=None, description="任务名称")
-    args: JsonValue | None = Field(
+    id: int | None = Field(default=None, primary_key=True)
+
+    state: TaskStateEnum = Field(
+        default=TaskStateEnum.PENDING, sa_column=Column(Enum(TaskStateEnum))
+    )
+
+    args: Json[Any] | None = Field(
         default=None, description="任务参数", sa_column=Column(JSON)
     )
     client: str | None = Field(default=None, description="任务客户端")
@@ -38,7 +62,8 @@ class TaskBase(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True)),
         description="任务本地接收时间",
     )
-    origin: str | None = Field(default=None, description="任务来源")
+    name: str | None = Field(default=None, description="任务名称")
+    # origin: str | None = Field(default=None, description="任务来源")
     parent_id: UUID4 | None = Field(default=None, description="任务父ID")
     pid: int | None = Field(default=None, description="任务进程ID")
     queue: str | None = Field(default=None, description="任务队列")
@@ -54,7 +79,7 @@ class TaskBase(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True)),
         description="任务拒绝时间",
     )
-    result: JsonValue | None = Field(
+    result: Json[Any] | None = Field(
         default=None, description="任务结果", sa_column=Column(JSON)
     )
     retried: datetime.datetime | None = Field(
@@ -83,7 +108,7 @@ class TaskBase(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True)),
         description="任务开始时间",
     )
-    state: str | None = Field(default=None, description="任务状态")
+    # state: str | None = Field(default=None, description="任务状态")
     succeeded: datetime.datetime | None = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
@@ -100,47 +125,9 @@ class TaskBase(SQLModel, table=True):
     uuid: str | None = Field(default=None, description="任务UUID")
 
     @classmethod
-    async def task_sent_handler(cls, task: Task):
-        data = {
-            "args": task.args,
-            "client": task.client,
-            "clock": task.clock,
-            "eta": task.eta,
-            "exception": task.exception,
-            "exchange": task.exchange,
-            "expires": task.expires,
-            "failed": task.failed,
-            "hostname": task.hostname,
-            "id": task.id,
-            "kwargs": task.kwargs,
-            "local_received": task.local_received,
-            "name": task.name,
-            "origin": task.origin,
-            "parent_id": task.parent_id,
-            "pid": task.pid,
-            "queue": task.queue,
-            "ready": task.ready,
-            "received": task.received,
-            "rejected": task.rejected,
-            # "requeue": task.requeue,
-            "result": task.result,
-            "retried": task.retried,
-            "retries": task.retries,
-            "revoked": task.revoked,
-            "root_id": task.root_id,
-            "routing_key": task.routing_key,
-            "runtime": task.runtime,
-            "sent": task.sent,
-            "started": task.started,
-            "state": task.state,
-            "succeeded": task.succeeded,
-            "timestamp": task.timestamp,
-            "traceback": task.traceback,
-            "type": task.type,
-            "utcoffset": task.utcoffset,
-            "uuid": task.uuid,
-        }
-        # print(data)
+    async def task_sent_handler(cls, task_status: Task):
+
+        # print(task_status)
         async with AsyncSession(async_engine) as session:
             # print(cls(**data))
             # data = {
@@ -157,6 +144,6 @@ class TaskBase(SQLModel, table=True):
             # }
             # print(TaskBase(**data))
             # print(TaskBase.model_validate(data))
-            session.add(TaskBase.model_validate(data))
+            session.add(TaskBase.model_validate(task_status))
             await session.commit()
             # await session.refresh(cls(**data))

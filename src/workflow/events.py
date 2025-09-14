@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import sys
 
@@ -14,16 +15,52 @@ def my_monitor(app: Celery):
     state: State = app.events.State()
 
     with asyncio.Runner() as runner:
-        # runner.run(async_func())
-
-        # loop = asyncio.get_event_loop()
 
         def task_handler(event):
             print(f"{event['type']}>>>>>>")
             state.event(event)
+            print(event["state"] if "state" in event else None)
             task: Task = state.tasks.get(event["uuid"])
-            print(event)
-            runner.run(TaskBase.task_sent_handler(task))
+            task_status = {
+                "args": task.args,
+                "client": task.client,
+                "clock": task.clock,
+                "eta": task.eta,
+                "exception": task.exception,
+                "exchange": task.exchange,
+                "expires": task.expires,
+                "failed": task.failed,
+                "hostname": getattr(task, "hostname", None),
+                "kwargs": task.kwargs,
+                "local_received": getattr(task, "local_received", None),
+                "name": task.name,
+                "origin": task.origin,
+                "parent_id": task.parent_id,
+                "pid": getattr(task, "pid", None),
+                "queue": getattr(task, "queue", None),
+                "ready": task.ready,
+                "received": task.received,
+                "rejected": task.rejected,
+                "requeue": getattr(task, "requeue", None),
+                "result": task.result,
+                "retried": task.retried,
+                "retries": task.retries,
+                "revoked": task.revoked,
+                "root_id": task.root_id,
+                "routing_key": task.routing_key,
+                "runtime": task.runtime,
+                "sent": task.sent,
+                "started": task.started,
+                "state": event["type"].split("-")[1].upper(),
+                "succeeded": task.succeeded,
+                "timestamp": task.timestamp,
+                "traceback": task.traceback,
+                "type": getattr(task, "type", None),
+                "utcoffset": getattr(task, "utcoffset", None),
+                "uuid": task.uuid,
+            }
+            print(task_status["state"])
+            runner.run(TaskBase.task_sent_handler(task_status))
 
         def task_received(event):
             print("task received:")
