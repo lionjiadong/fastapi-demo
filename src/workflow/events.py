@@ -1,12 +1,13 @@
 import asyncio
-import json
 import os
 import sys
+
+from pydantic import ValidationError
 
 pypath = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(pypath)
 from celery import Celery
-from celery.events.state import State, Task
+from celery.events.state import State
 
 from src.workflow.models.task import TaskBase
 
@@ -16,55 +17,24 @@ def my_monitor(app: Celery):
 
     with asyncio.Runner() as runner:
 
-        def task_handler(event):
+        def task_sent_handle(event):
             print(f"{event['type']}>>>>>>")
             state.event(event)
-            print(event["state"] if "state" in event else None)
-            task: Task = state.tasks.get(event["uuid"])
-            task_status = {
-                "args": task.args,
-                "client": task.client,
-                "clock": task.clock,
-                "eta": task.eta,
-                "exception": task.exception,
-                "exchange": task.exchange,
-                "expires": task.expires,
-                "failed": task.failed,
-                "hostname": getattr(task, "hostname", None),
-                "kwargs": task.kwargs,
-                "local_received": getattr(task, "local_received", None),
-                "name": task.name,
-                "origin": task.origin,
-                "parent_id": task.parent_id,
-                "pid": getattr(task, "pid", None),
-                "queue": getattr(task, "queue", None),
-                "ready": task.ready,
-                "received": task.received,
-                "rejected": task.rejected,
-                "requeue": getattr(task, "requeue", None),
-                "result": task.result,
-                "retried": task.retried,
-                "retries": task.retries,
-                "revoked": task.revoked,
-                "root_id": task.root_id,
-                "routing_key": task.routing_key,
-                "runtime": task.runtime,
-                "sent": task.sent,
-                "started": task.started,
-                "state": event["type"].split("-")[1].upper(),
-                "succeeded": task.succeeded,
-                "timestamp": task.timestamp,
-                "traceback": task.traceback,
-                "type": getattr(task, "type", None),
-                "utcoffset": getattr(task, "utcoffset", None),
-                "uuid": task.uuid,
-            }
-            print(task_status["state"])
-            runner.run(TaskBase.task_sent_handler(task_status))
+            task = state.tasks.get(event["uuid"])
+            # print(task.ready)
+            # print(task.__dict__)
+            try:
+                data = TaskBase.model_validate(task.__dict__)
+                # print(data)
+                runner.run(
+                    TaskBase.task_sent_handler(data.model_dump(exclude_unset=True))
+                )
+            except ValidationError as e:
+                print("错误")
+                print(e)
 
         def task_received(event):
             print("task received:")
-            state.event(event)
             task = state.tasks.get(event["uuid"])
 
             runner.run(TaskBase.task_sent_handler(task))
@@ -85,6 +55,7 @@ def my_monitor(app: Celery):
             print("task failed:", event)
             state.event(event)
             task = state.tasks.get(event["uuid"])
+            print(task)
             # runner.run(TaskBase.task_sent_handler(task))
 
         def task_rejected(event):
@@ -122,14 +93,14 @@ def my_monitor(app: Celery):
                 connection,
                 handlers={
                     "*": state.event,
-                    "task-sent": task_handler,
-                    "task-received": task_handler,
-                    "task-started": task_handler,
-                    "task-succeeded": task_handler,
-                    "task-failed": task_handler,
-                    "task-rejected": task_handler,
-                    "task-revoked": task_handler,
-                    "task-retried": task_handler,
+                    "task-sent": task_sent_handle,
+                    "task-received": task_sent_handle,
+                    "task-started": task_sent_handle,
+                    "task-succeeded": task_sent_handle,
+                    "task-failed": task_sent_handle,
+                    "task-rejected": task_sent_handle,
+                    "task-revoked": task_sent_handle,
+                    "task-retried": task_sent_handle,
                     # "worker-online": worker_online,
                     # "worker-heartbeat": worker_heartbeat,
                     # "worker-offline": worker_offline,

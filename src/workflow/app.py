@@ -9,13 +9,12 @@ app = Celery("liangjiadong")
 app.config_from_object("src.config.settings")
 app.autodiscover_tasks(["src.auth"])
 
-# print(app._conf)
-
 
 @app.task(name="test_func13")
 def test_func13():
-    time.sleep(3)
+    # time.sleep(3)
     print("lalalala")
+    # int("a")
 
 
 @app.task(

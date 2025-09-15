@@ -6,6 +6,7 @@
     "redoc",
     "selectin",
     "sessionmaker",
+    "signum",
     "syncify"
   ],
   "[python]": {
