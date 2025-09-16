@@ -9,8 +9,8 @@ sys.path.append(pypath)
 from celery import Celery
 from celery.events.state import State
 
-from src.workflow.models.task import TaskBase
-from src.workflow.schemas.task import TaskStateEnum
+from src.workflow.models.task import Task, TaskStateEnum
+from src.workflow.models.worker import Worker
 
 
 def my_monitor(app: Celery):
@@ -37,16 +37,13 @@ def my_monitor(app: Celery):
                 return
             event_data: dict = task.__dict__
             event_data.update({"state": state_dict.get(event["type"])})
-            runner.run(TaskBase.task_event_handler(event_data))
+            runner.run(Task.task_event_handler(event_data))
 
-        def worker_online(event):
-            print("worker online:", event)
-
-        def worker_heartbeat(event):
-            print("worker heartbeat:", event)
-
-        def worker_offline(event):
-            print("worker offline:", event)
+        def worker_event_handle(event):
+            print(event)
+            state.event(event)
+            worker = state.workers.get(event["hostname"])
+            print(worker)
 
         with app.connection() as connection:
             recv = app.events.Receiver(
@@ -61,9 +58,9 @@ def my_monitor(app: Celery):
                     "task-rejected": task_event_handle,
                     "task-revoked": task_event_handle,
                     "task-retried": task_event_handle,
-                    # "worker-online": worker_online,
-                    "worker-heartbeat": worker_heartbeat,
-                    # "worker-offline": worker_offline,
+                    "worker-online": worker_event_handle,
+                    "worker-heartbeat": worker_event_handle,
+                    "worker-offline": worker_event_handle,
                 },
             )
             recv.capture(limit=None, timeout=None, wakeup=True)

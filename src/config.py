@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     broker_connection_max_retries: int | None
     result_backend: str
     worker_send_task_events: bool
+    worker_direct: bool
     task_send_sent_event: bool
     task_acks_late: bool
     task_track_started: bool

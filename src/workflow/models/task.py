@@ -1,17 +1,35 @@
+import enum
 from datetime import datetime
 from decimal import Decimal
 from typing import Annotated, Any, Dict
 
-from celery import Task
 from pydantic import UUID4, BeforeValidator, JsonValue
 from sqlmodel import JSON, Column, DateTime, Enum, Field, SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.database.core import async_engine
-from src.workflow.schemas.task import TaskStateEnum
 
 
-class TaskBase(SQLModel, table=True):
+class TaskStateEnum(str, enum.Enum):
+    #: Task state is unknown (assumed pending since you know the id).
+    PENDING = "PENDING"
+    #: Task was received by a worker (only used in events).
+    RECEIVED = "RECEIVED"
+    #: Task was started by a worker (:setting:`task_track_started`).
+    STARTED = "STARTED"
+    #: Task succeeded
+    SUCCESS = "SUCCESS"
+    #: Task failed
+    FAILURE = "FAILURE"
+    #: Task was revoked.
+    REVOKED = "REVOKED"
+    #: Task was rejected (only used in events).
+    REJECTED = "REJECTED"
+    #: Task is waiting for retry.
+    RETRY = "RETRY"
+
+
+class Task(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
 
     args: JsonValue | None = Field(
@@ -105,24 +123,22 @@ class TaskBase(SQLModel, table=True):
         description="任务时间戳",
     )
     traceback: str | None = Field(default=None, description="任务堆栈跟踪信息")
-    type: str | None = Field(default=None, description="任务类型")
+    type: str | None = Field(default=None, description="消息类型")
     utcoffset: int | None = Field(default=None, description="任务UTC偏移")
     uuid: str | None = Field(default=None, description="任务UUID", unique=True)
 
     @classmethod
     async def task_event_handler(cls, event: Dict[str, Any]):
-        task_validate: TaskBase = cls.model_validate(event)
+        task_validate: Task = cls.model_validate(event)
 
         async with AsyncSession(async_engine) as session:
-            task: TaskBase | None = (
-                await session.exec(
-                    select(TaskBase).where(TaskBase.uuid == task_validate.uuid)
-                )
+            task: Task | None = (
+                await session.exec(select(Task).where(Task.uuid == task_validate.uuid))
             ).first()
             if task:
                 task.sqlmodel_update(task_validate.model_dump(exclude_unset=True))
             else:
-                task = TaskBase(**task_validate.model_dump(exclude_unset=True))
+                task = Task(**task_validate.model_dump(exclude_unset=True))
             session.add(task)
             await session.commit()
             await session.refresh(task)
