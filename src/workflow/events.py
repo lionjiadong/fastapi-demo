@@ -10,74 +10,34 @@ from celery import Celery
 from celery.events.state import State
 
 from src.workflow.models.task import TaskBase
+from src.workflow.schemas.task import TaskStateEnum
 
 
 def my_monitor(app: Celery):
     state: State = app.events.State()
 
+    state_dict: dict = {
+        "task-sent": TaskStateEnum.PENDING,
+        "task-received": TaskStateEnum.RECEIVED,
+        "task-started": TaskStateEnum.STARTED,
+        "task-succeeded": TaskStateEnum.SUCCESS,
+        "task-failed": TaskStateEnum.FAILURE,
+        "task-rejected": TaskStateEnum.REJECTED,
+        "task-revoked": TaskStateEnum.REVOKED,
+        "task-retried": TaskStateEnum.RETRY,
+    }
+
     with asyncio.Runner() as runner:
 
-        def task_sent_handle(event):
-            print(f"{event['type']}>>>>>>")
+        def task_event_handle(event):
             state.event(event)
             task = state.tasks.get(event["uuid"])
-            # print(task.ready)
-            # print(task.__dict__)
-            try:
-                data = TaskBase.model_validate(task.__dict__)
-                # print(data)
-                runner.run(
-                    TaskBase.task_sent_handler(data.model_dump(exclude_unset=True))
-                )
-            except ValidationError as e:
-                print("错误")
-                print(e)
 
-        def task_received(event):
-            print("task received:")
-            task = state.tasks.get(event["uuid"])
-
-            runner.run(TaskBase.task_sent_handler(task))
-
-        def task_started(event):
-            print("task started:", event)
-            state.event(event)
-            task = state.tasks.get(event["uuid"])
-            runner.run(TaskBase.task_sent_handler(task))
-
-        def task_succeeded(event):
-            print("task succeeded:", event)
-            state.event(event)
-            task = state.tasks.get(event["uuid"])
-            runner.run(TaskBase.task_sent_handler(task))
-
-        def task_failed(event):
-            print("task failed:", event)
-            state.event(event)
-            task = state.tasks.get(event["uuid"])
-            print(task)
-            # runner.run(TaskBase.task_sent_handler(task))
-
-        def task_rejected(event):
-            # 任务被拒绝
-            print("task rejected:", event)
-            state.event(event)
-            task = state.tasks.get(event["uuid"])
-            # runner.run(TaskBase.task_sent_handler(task))
-
-        def task_revoked(event):
-            # 任务被撤销
-            print("task revoked:", event)
-            state.event(event)
-            task = state.tasks.get(event["uuid"])
-            # runner.run(TaskBase.task_sent_handler(task))
-
-        def task_retried(event):
-            # 任务重试
-            print("task retried:", event)
-            state.event(event)
-            task = state.tasks.get(event["uuid"])
-            # runner.run(TaskBase.task_sent_handler(task))
+            if not task:
+                return
+            event_data: dict = task.__dict__
+            event_data.update({"state": state_dict.get(event["type"])})
+            runner.run(TaskBase.task_event_handler(event_data))
 
         def worker_online(event):
             print("worker online:", event)
@@ -93,16 +53,16 @@ def my_monitor(app: Celery):
                 connection,
                 handlers={
                     "*": state.event,
-                    "task-sent": task_sent_handle,
-                    "task-received": task_sent_handle,
-                    "task-started": task_sent_handle,
-                    "task-succeeded": task_sent_handle,
-                    "task-failed": task_sent_handle,
-                    "task-rejected": task_sent_handle,
-                    "task-revoked": task_sent_handle,
-                    "task-retried": task_sent_handle,
+                    "task-sent": task_event_handle,
+                    "task-received": task_event_handle,
+                    "task-started": task_event_handle,
+                    "task-succeeded": task_event_handle,
+                    "task-failed": task_event_handle,
+                    "task-rejected": task_event_handle,
+                    "task-revoked": task_event_handle,
+                    "task-retried": task_event_handle,
                     # "worker-online": worker_online,
-                    # "worker-heartbeat": worker_heartbeat,
+                    "worker-heartbeat": worker_heartbeat,
                     # "worker-offline": worker_offline,
                 },
             )

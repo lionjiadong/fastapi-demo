@@ -1,9 +1,9 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Dict
+from typing import Annotated, Any, Dict
 
 from celery import Task
-from pydantic import UUID4, JsonValue
+from pydantic import UUID4, BeforeValidator, JsonValue
 from sqlmodel import JSON, Column, DateTime, Enum, Field, SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -44,12 +44,10 @@ class TaskBase(SQLModel, table=True):
         description="任务本地接收时间",
     )
     name: str | None = Field(default=None, description="任务名称")
-    # origin: str | None = Field(default=None, description="任务来源")
     parent_id: UUID4 | None = Field(default=None, description="任务父ID")
     pid: int | None = Field(default=None, description="任务进程ID")
     queue: str | None = Field(default=None, description="任务队列")
     requeue: bool | None = Field(default=None, description="任务是否重新入队")
-    # ready: bool | None = Field(default=None, description="任务是否就绪")
     received: datetime | None = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
@@ -76,7 +74,13 @@ class TaskBase(SQLModel, table=True):
     )
     root_id: UUID4 | None = Field(default=None, description="任务根ID")
     routing_key: str | None = Field(default=None, description="任务路由键")
-    runtime: Decimal | None = Field(default=None, description="任务运行时长(秒)")
+    runtime: (
+        Annotated[
+            Decimal,
+            BeforeValidator(lambda x: Decimal(x).quantize(Decimal("0.00"))),
+        ]
+        | None
+    ) = Field(default=None, description="任务运行时长(秒)")
     sent: datetime | None = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
@@ -106,24 +110,19 @@ class TaskBase(SQLModel, table=True):
     uuid: str | None = Field(default=None, description="任务UUID", unique=True)
 
     @classmethod
-    async def task_sent_handler(cls, event: Dict[str, Any]):
-        async with AsyncSession(async_engine) as session:
+    async def task_event_handler(cls, event: Dict[str, Any]):
+        task_validate: TaskBase = cls.model_validate(event)
 
+        async with AsyncSession(async_engine) as session:
             task: TaskBase | None = (
                 await session.exec(
-                    select(TaskBase).where(TaskBase.uuid == event["uuid"])
+                    select(TaskBase).where(TaskBase.uuid == task_validate.uuid)
                 )
             ).first()
-            print(task.id if task else "不存在")
             if task:
-                print("修改")
-                task.sqlmodel_update(event)
-                session.add(task)
-                await session.commit()
-                await session.refresh(task)
+                task.sqlmodel_update(task_validate.model_dump(exclude_unset=True))
             else:
-                print("新增")
-                task = TaskBase(**event)
-                session.add(task)
-                await session.commit()
-                await session.refresh(task)
+                task = TaskBase(**task_validate.model_dump(exclude_unset=True))
+            session.add(task)
+            await session.commit()
+            await session.refresh(task)

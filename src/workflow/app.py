@@ -14,7 +14,7 @@ app.autodiscover_tasks(["src.auth"])
 def test_func13():
     # time.sleep(3)
     print("lalalala")
-    # int("a")
+    int("a")
 
 
 @app.task(
@@ -28,8 +28,7 @@ def test_func(self, x, y):
     print(x, y)
     # s = app.signature("test_func13")
     # s.apply_async()
-    # time.sleep(3)
-    # int("abc")
+    time.sleep(3)
     raise Reject("no reason", requeue=False)
 
 
@@ -40,5 +39,5 @@ def test_func(self, x, y):
 # watchmedo auto-restart --pattern='tasks.py;workflow' --recursive -- celery -A src.workflow.app worker --concurrency=4 --loglevel=INFO
 # watchmedo auto-restart --pattern='tasks.py;workflow' --recursive -- python ./src/workflow/events.py
 
-# watchmedo auto-restart --pattern='**/tasks.py;**/workflow/**' --recursive -- celery -A src.workflow.app worker --concurrency=4 --loglevel=INFO
+# watchmedo auto-restart --pattern='**/tasks.py;**/workflow/**' --recursive -- celery -A src.workflow.app worker --concurrency=4 --loglevel=INFO --heartbeat-interval=10
 # watchmedo auto-restart --pattern='**/tasks.py;src/workflow/**;src/workflow/models/**' --recursive -- python ./src/workflow/events.py

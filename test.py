@@ -26,6 +26,7 @@ s1 = app.signature(
     queue="celery",
     # expires=2,
     # countdown=3,
+    timeout=5,
 )
 # # s1.apply_async(link=s)
 s1.apply_async()
