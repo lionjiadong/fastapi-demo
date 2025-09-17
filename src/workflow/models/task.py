@@ -7,10 +7,13 @@ from pydantic import UUID4, BeforeValidator, JsonValue
 from sqlmodel import JSON, Column, DateTime, Enum, Field, SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from src.database.base import TableBase, set_table_name
 from src.database.core import async_engine
 
 
 class TaskStateEnum(str, enum.Enum):
+    __tablename__ = set_table_name("enum_task_state")
+
     #: Task state is unknown (assumed pending since you know the id).
     PENDING = "PENDING"
     #: Task was received by a worker (only used in events).
@@ -29,8 +32,7 @@ class TaskStateEnum(str, enum.Enum):
     RETRY = "RETRY"
 
 
-class Task(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
+class Task(TableBase, table=True):
 
     args: JsonValue | None = Field(
         default=None, description="任务参数", sa_column=Column(JSON)

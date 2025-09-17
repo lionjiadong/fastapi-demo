@@ -2,19 +2,17 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Annotated, Any, Dict
 
-from celery import Task
-from pydantic import UUID4, BeforeValidator, JsonValue
-from sqlmodel import JSON, Column, DateTime, Enum, Field, SQLModel, select
+from pydantic import BeforeValidator
+from sqlmodel import Column, DateTime, Field, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from src.database.base import TableBase, set_table_name
 from src.database.core import async_engine
 
 
-class Worker(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
+class Worker(TableBase, table=True):
 
     hostname: str | None = Field(default=None, description="工人主机名")
-
     freq: (
         Annotated[
             Decimal,
@@ -22,19 +20,23 @@ class Worker(SQLModel, table=True):
         ]
         | None
     ) = Field(default=None, description="工人心跳频率(秒)")
-
     clock: int | None = Field(default=None, description="任务时钟")
+    alive: bool | None = Field(default=None, description="工人是否存活")
     active: int | None = Field(default=None, description="活跃任务数")
     processed: int | None = Field(default=None, description="已处理任务数")
     sw_ident: str | None = Field(default=None, description="工人标识")
     sw_ver: str | None = Field(default=None, description="工人版本")
     sw_sys: str | None = Field(default=None, description="工人系统")
-
     pid: int | None = Field(default=None, description="工人进程ID")
     timestamp: datetime | None = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
         description="工人时间戳",
+    )
+    heartbeat_expires: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True)),
+        description="工人心跳过期时间",
     )
     type: str | None = Field(default=None, description="消息类型")
     utcoffset: int | None = Field(default=None, description="工人UTC偏移")

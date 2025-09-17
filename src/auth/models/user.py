@@ -1,16 +1,15 @@
+from re import A
 from typing import TYPE_CHECKING, Any, Self
+
 import bcrypt
-from pydantic import (
-    EmailStr,
-    ModelWrapValidatorHandler,
-    model_validator,
-)
-from sqlmodel.ext.asyncio.session import AsyncSession
+from pydantic import EmailStr, ModelWrapValidatorHandler, model_validator
 from sqlmodel import Field, Relationship, SQLModel, select
-from src.database.base import OutMixin, TableMixin
-from src.database.core import async_engine
+from sqlmodel.ext.asyncio.session import AsyncSession
+
 from src.auth.exception import authenticate_exception, inactive_exception
 from src.auth.models.links import UserRoleLink
+from src.database.base import OperationMixin, TableBase, set_table_name
+from src.database.core import async_engine
 
 if TYPE_CHECKING:
     from src.auth.models.role import Role
@@ -21,11 +20,12 @@ class UserBase(SQLModel):
     email: EmailStr | None = None
 
 
-class UserOut(UserBase, OutMixin):
-    pass
+class UserOut(UserBase, OperationMixin):
+    id: int
 
 
-class User(UserBase, TableMixin, table=True):
+class User(TableBase, UserBase, OperationMixin, table=True):
+
     hashed_password: str
 
     roles: list["Role"] = Relationship(

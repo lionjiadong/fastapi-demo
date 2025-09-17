@@ -1,10 +1,11 @@
-from typing import Any
 import uuid
-from sqlalchemy import table
-from sqlmodel import Field, SQLModel, JSON, Column
-from pydantic import UUID4, StrictBool, JsonValue
+from typing import Any
 
-from src.database.base import TableBase, TableMixin
+from pydantic import UUID4, JsonValue, StrictBool
+from sqlalchemy import table
+from sqlmodel import JSON, Column, Field, SQLModel
+
+from src.database.base import AuditMixin, TableBase
 
 
 class TestBase(SQLModel):
@@ -16,5 +17,5 @@ class TestBase(SQLModel):
     )
 
 
-class TestField(TableMixin, TestBase, SQLModel, table=True):
+class TestField(AuditMixin, TestBase, SQLModel, table=True):
     pass

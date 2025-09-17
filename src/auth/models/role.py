@@ -1,8 +1,9 @@
 from typing import TYPE_CHECKING
+
 from sqlmodel import Relationship, SQLModel
 
-from src.database.base import OutMixin, TableMixin
 from src.auth.models.links import UserRoleLink
+from src.database.base import OperationMixin, TableBase, set_table_name
 
 if TYPE_CHECKING:
     from src.auth.models.user import User
@@ -13,11 +14,12 @@ class RoleBase(SQLModel):
     code: str
 
 
-class RoleOut(RoleBase, OutMixin):
+class RoleOut(RoleBase, OperationMixin):
     pass
 
 
-class Role(RoleBase, TableMixin, table=True):
+class Role(TableBase, RoleBase, OperationMixin, table=True):
+
     users: list["User"] = Relationship(
         back_populates="roles",
         link_model=UserRoleLink,

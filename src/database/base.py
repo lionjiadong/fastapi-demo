@@ -1,17 +1,61 @@
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Self, Union
+from typing import TYPE_CHECKING, Any, Dict, Self, Tuple, Type, Union, cast
+
 from fastapi import HTTPException
 from pydantic import BaseModel
+from pydantic_core import PydanticUndefined
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import declared_attr
 from sqlmodel import Field, SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlalchemy.exc import IntegrityError
+from sqlmodel.main import SQLModelMetaclass
 
 if TYPE_CHECKING:
     from src.auth.models.user import User
 
 
-class TableBase(SQLModel):
+class DescriptionMeta(SQLModelMetaclass):
+    """自动将字段描述添加到数据库列注释中"""
+
+    def __new__(
+        cls,
+        name: str,
+        bases: Tuple[Type[Any], ...],
+        class_dict: Dict[str, Any],
+        **kwargs: Any,
+    ) -> Any:
+        new_class = super().__new__(cls, name, bases, class_dict, **kwargs)
+        fields = new_class.model_fields
+        for k, field in fields.items():
+            desc = field.description
+            if desc:
+                # deal with sa_column_kwargs
+                if field.sa_column_kwargs is not PydanticUndefined:
+                    field.sa_column_kwargs["comment"] = desc
+                else:
+                    field.sa_column_kwargs = {"comment": desc}
+                # deal with sa_column
+                if field.sa_column is not PydanticUndefined:
+                    if not field.sa_column.comment:
+                        field.sa_column.comment = desc
+                # deal with attributes of new_class
+                if hasattr(new_class, k):
+                    column = getattr(new_class, k)
+                    if hasattr(column, "comment") and not column.comment:
+                        column.comment = desc
+        return new_class
+
+
+class TableBase(SQLModel, metaclass=DescriptionMeta):
+    id: int | None = Field(default=None, primary_key=True)
+
+
+class OperationMixin(SQLModel):
+    """
+    审计操作相关混合
+    """
+
     active: bool = Field(
         default=True, title="是否有效", description="true有效,反之false"
     )
@@ -33,10 +77,6 @@ class TableBase(SQLModel):
     delete_user_id: int | None = Field(
         default=None, foreign_key="user.id", title="删除用户"
     )
-
-
-class TableMixin(TableBase):
-    id: int | None = Field(default=None, primary_key=True)
 
     @classmethod
     async def get_by_id(cls, session: AsyncSession, id: int) -> Self:
@@ -87,5 +127,6 @@ class TableMixin(TableBase):
         return None
 
 
-class OutMixin(TableBase):
-    id: int
+def set_table_name(name: str) -> declared_attr:
+    """设置表名"""
+    return cast(declared_attr, name.lower())

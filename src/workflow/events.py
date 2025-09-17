@@ -8,6 +8,7 @@ pypath = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file_
 sys.path.append(pypath)
 from celery import Celery
 from celery.events.state import State
+from celery.events.state import Worker as CeleryWorker
 
 from src.workflow.models.task import Task, TaskStateEnum
 from src.workflow.models.worker import Worker
@@ -41,8 +42,14 @@ def my_monitor(app: Celery):
 
         def worker_event_handle(event):
             print(event)
+            # if event["type"] == "worker-offline":
+            #     event.update({"alive": False})
+            # else:
+            #     event.update({"alive": True})
+
+            runner.run(Worker.worker_event_handler(event))
             state.event(event)
-            worker = state.workers.get(event["hostname"])
+            worker: CeleryWorker = state.workers.get(event["hostname"])
             print(worker)
 
         with app.connection() as connection:
