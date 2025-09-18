@@ -6,12 +6,12 @@ from typing import Any
 
 from pydantic import ValidationError
 
-pypath = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append(pypath)
+fastapi_path = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+sys.path.append(fastapi_path)
 from celery import Celery
 from celery.events.state import State
-from celery.events.state import Task as CeleryTask
-from celery.events.state import Worker as CeleryWorker
 
 from src.workflow.models.task import Task, TaskStateEnum
 from src.workflow.models.worker import Worker
@@ -36,11 +36,13 @@ def my_monitor(app: Celery):
         def task_event_handle(event: dict[str, Any]) -> None:
             state.event(event)
             task = state.tasks.get(event["uuid"])
+            print(task)
 
             if not task:
                 return
             event_data: dict = task.__dict__
             event_data.update({"state": state_dict.get(event["type"])})
+            print(f"task event: {event_data}")
             runner.run(Task.task_event_handler(event_data))
 
         def worker_event_handle(event: dict[str, Any]) -> None:

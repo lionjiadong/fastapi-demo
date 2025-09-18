@@ -1,13 +1,16 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Annotated, Any, Dict
+from typing import TYPE_CHECKING, Annotated, Any, Dict
 
 from pydantic import BeforeValidator
-from sqlmodel import Column, DateTime, Field, select
+from sqlmodel import Column, DateTime, Field, Relationship, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.database.base import TableBase, set_table_name
+from src.database.base import TableBase
 from src.database.core import async_engine
+
+if TYPE_CHECKING:
+    from src.workflow.models.task import Task
 
 
 class Worker(TableBase, table=True):
@@ -35,6 +38,8 @@ class Worker(TableBase, table=True):
     )
     type: str | None = Field(default=None, description="消息类型")
     utcoffset: int | None = Field(default=None, description="工人UTC偏移")
+
+    tasks: list["Task"] = Relationship(back_populates="worker")
 
     @classmethod
     async def worker_event_handler(cls, event: Dict[str, Any]):

@@ -1,14 +1,17 @@
 import enum
 from datetime import datetime
 from decimal import Decimal
-from typing import Annotated, Any, Dict
+from typing import TYPE_CHECKING, Annotated, Any, Dict, Optional
 
 from pydantic import UUID4, BeforeValidator, JsonValue
-from sqlmodel import JSON, Column, DateTime, Enum, Field, SQLModel, select
+from sqlmodel import JSON, Column, DateTime, Enum, Field, Relationship, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.database.base import TableBase, set_table_name
 from src.database.core import async_engine
+
+# if TYPE_CHECKING:
+from src.workflow.models.worker import Worker
 
 
 class TaskStateEnum(str, enum.Enum):
@@ -34,66 +37,66 @@ class TaskStateEnum(str, enum.Enum):
 
 class Task(TableBase, table=True):
 
-    args: JsonValue | None = Field(
+    args: Optional[JsonValue] = Field(
         default=None, description="任务参数", sa_column=Column(JSON)
     )
-    client: str | None = Field(default=None, description="任务客户端")
-    clock: int | None = Field(default=None, description="任务时钟")
-    eta: datetime | None = Field(
+    client: Optional[str] = Field(default=None, description="任务客户端")
+    clock: Optional[int] = Field(default=None, description="任务时钟")
+    eta: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
         description="任务预计执行时间",
     )
-    exception: str | None = Field(default=None, description="任务异常信息")
-    exchange: str | None = Field(default=None, description="任务交换机")
-    expires: datetime | None = Field(
+    exception: Optional[str] = Field(default=None, description="任务异常信息")
+    exchange: Optional[str] = Field(default=None, description="任务交换机")
+    expires: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
         description="任务过期时间",
     )
-    failed: datetime | None = Field(
+    failed: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
         description="任务失败时间",
     )
-    hostname: str | None = Field(default=None, description="任务主机名")
-    kwargs: str | None = Field(default=None, description="任务关键字参数")
-    local_received: datetime | None = Field(
+    hostname: Optional[str] = Field(default=None, description="任务主机名")
+    kwargs: Optional[str] = Field(default=None, description="任务关键字参数")
+    local_received: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
         description="任务本地接收时间",
     )
-    name: str | None = Field(default=None, description="任务名称")
-    parent_id: UUID4 | None = Field(default=None, description="任务父ID")
-    pid: int | None = Field(default=None, description="任务进程ID")
-    queue: str | None = Field(default=None, description="任务队列")
+    name: Optional[str] = Field(default=None, description="任务名称")
+    parent_id: Optional[UUID4] = Field(default=None, description="任务父ID")
+    pid: Optional[int] = Field(default=None, description="任务进程ID")
+    queue: Optional[str] = Field(default=None, description="任务队列")
     requeue: bool | None = Field(default=None, description="任务是否重新入队")
-    received: datetime | None = Field(
+    received: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
         description="任务接收时间",
     )
-    rejected: datetime | None = Field(
+    rejected: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
         description="任务拒绝时间",
     )
-    result: JsonValue | None = Field(
+    result: Optional[JsonValue] = Field(
         default=None, description="任务结果", sa_column=Column(JSON)
     )
-    retried: datetime | None = Field(
+    retried: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
         description="任务重试时间",
     )
-    retries: int | None = Field(default=None, description="任务重试次数")
-    revoked: datetime | None = Field(
+    retries: Optional[int] = Field(default=None, description="任务重试次数")
+    revoked: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
         description="任务撤销时间",
     )
-    root_id: UUID4 | None = Field(default=None, description="任务根ID")
-    routing_key: str | None = Field(default=None, description="任务路由键")
+    root_id: Optional[UUID4] = Field(default=None, description="任务根ID")
+    routing_key: Optional[str] = Field(default=None, description="任务路由键")
     runtime: (
         Annotated[
             Decimal,
@@ -101,12 +104,12 @@ class Task(TableBase, table=True):
         ]
         | None
     ) = Field(default=None, description="任务运行时长(秒)")
-    sent: datetime | None = Field(
+    sent: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
         description="任务发送时间",
     )
-    started: datetime | None = Field(
+    started: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
         description="任务开始时间",
@@ -114,26 +117,35 @@ class Task(TableBase, table=True):
     state: TaskStateEnum = Field(
         default=TaskStateEnum.PENDING, sa_column=Column(Enum(TaskStateEnum))
     )
-    succeeded: datetime | None = Field(
+    succeeded: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
         description="任务是否成功",
     )
-    timestamp: datetime | None = Field(
+    timestamp: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
         description="任务时间戳",
     )
-    traceback: str | None = Field(default=None, description="任务堆栈跟踪信息")
-    type: str | None = Field(default=None, description="消息类型")
-    utcoffset: int | None = Field(default=None, description="任务UTC偏移")
-    uuid: str | None = Field(default=None, description="任务UUID", unique=True)
+    traceback: Optional[str] = Field(default=None, description="任务堆栈跟踪信息")
+    type: Optional[str] = Field(default=None, description="消息类型")
+    utcoffset: Optional[int] = Field(default=None, description="任务UTC偏移")
+    uuid: Optional[UUID4] = Field(default=None, description="任务UUID", unique=True)
+
+    worker_id: Optional[int] = Field(default=None, foreign_key="worker.id")
+    worker: Optional["Worker"] = Relationship(back_populates="tasks")
 
     @classmethod
     async def task_event_handler(cls, event: Dict[str, Any]):
         task_validate: Task = cls.model_validate(event)
 
         async with AsyncSession(async_engine) as session:
+            worker: Optional["Worker"] = (
+                await session.exec(
+                    select(Worker).where(Worker.hostname == task_validate.hostname)
+                )
+            ).first()
+            task_validate.worker_id = worker.id if worker else None
             task: Task | None = (
                 await session.exec(select(Task).where(Task.uuid == task_validate.uuid))
             ).first()

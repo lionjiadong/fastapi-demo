@@ -1,6 +1,3 @@
-from typing import cast
-
-from sqlalchemy.orm import declared_attr
 from sqlmodel import Field, Relationship, SQLModel
 
 from src.database.base import set_table_name

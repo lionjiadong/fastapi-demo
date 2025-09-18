@@ -22,7 +22,7 @@ from src.workflow.app import app, test_func
 s = app.signature("test_func", args=(1, 2), immutable=True, expires=10, countdown=3)
 s1 = app.signature(
     "test_func13",
-    queue="celery",
+    queue="celery@fedora.dq2",
     # expires=2,
     # countdown=3,
     timeout=5,
