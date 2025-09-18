@@ -33,11 +33,6 @@ class Worker(TableBase, table=True):
         sa_column=Column(DateTime(timezone=True)),
         description="工人时间戳",
     )
-    heartbeat_expires: datetime | None = Field(
-        default=None,
-        sa_column=Column(DateTime(timezone=True)),
-        description="工人心跳过期时间",
-    )
     type: str | None = Field(default=None, description="消息类型")
     utcoffset: int | None = Field(default=None, description="工人UTC偏移")
 

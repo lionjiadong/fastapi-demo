@@ -1,6 +1,8 @@
 import asyncio
 import os
 import sys
+from re import A
+from typing import Any
 
 from pydantic import ValidationError
 
@@ -8,6 +10,7 @@ pypath = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file_
 sys.path.append(pypath)
 from celery import Celery
 from celery.events.state import State
+from celery.events.state import Task as CeleryTask
 from celery.events.state import Worker as CeleryWorker
 
 from src.workflow.models.task import Task, TaskStateEnum
@@ -30,7 +33,7 @@ def my_monitor(app: Celery):
 
     with asyncio.Runner() as runner:
 
-        def task_event_handle(event):
+        def task_event_handle(event: dict[str, Any]) -> None:
             state.event(event)
             task = state.tasks.get(event["uuid"])
 
@@ -40,17 +43,11 @@ def my_monitor(app: Celery):
             event_data.update({"state": state_dict.get(event["type"])})
             runner.run(Task.task_event_handler(event_data))
 
-        def worker_event_handle(event):
-            print(event)
-            # if event["type"] == "worker-offline":
-            #     event.update({"alive": False})
-            # else:
-            #     event.update({"alive": True})
-
+        def worker_event_handle(event: dict[str, Any]) -> None:
+            event.update(
+                {"alive": False if event["type"] == "worker-offline" else True}
+            )
             runner.run(Worker.worker_event_handler(event))
-            state.event(event)
-            worker: CeleryWorker = state.workers.get(event["hostname"])
-            print(worker)
 
         with app.connection() as connection:
             recv = app.events.Receiver(

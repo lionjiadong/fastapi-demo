@@ -3,7 +3,6 @@ import datetime
 from celery import group, signature
 
 from src.auth.models import links
-from src.test.models.test import TestField
 from src.workflow.app import app, test_func
 
 # s = app.signature(
