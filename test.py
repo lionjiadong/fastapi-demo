@@ -28,6 +28,13 @@ s1 = app.signature(
     timeout=5,
 )
 # # s1.apply_async(link=s)
+# s1.apply_async()
+s1 = app.signature(
+    "tasks.some_task",
+    # expires=2,
+    # countdown=3,
+)
+# # s1.apply_async(link=s)
 s1.apply_async()
 # group(s1 for v in range(10)).apply_async()
 
