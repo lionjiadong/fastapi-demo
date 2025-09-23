@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     task_track_started: bool
     enable_utc: bool
     timezone: str
+    beat_dburi: str
+    # beat_schema: str | None
+    beat_engine_options: dict | None
 
     model_config = SettingsConfigDict(env_file="local.env", env_parse_none_str="None")
 

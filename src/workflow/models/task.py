@@ -9,7 +9,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from src.database.base import TableBase, set_table_name
 from src.database.core import async_engine
 from src.workflow.models.worker import Worker
-from src.workflow.schemas.enum import TaskStateEnum
+from src.workflow.schemas.enum import TaskState
 
 
 class Task(TableBase, table=True):
@@ -95,8 +95,8 @@ class Task(TableBase, table=True):
         sa_column=Column(DateTime(timezone=True)),
         description="任务开始时间",
     )
-    state: TaskStateEnum = Field(
-        default=TaskStateEnum.PENDING, sa_column=Column(Enum(TaskStateEnum))
+    state: TaskState = Field(
+        default=TaskState.PENDING, sa_column=Column(Enum(TaskState))
     )
     succeeded: Optional[datetime] = Field(
         default=None,

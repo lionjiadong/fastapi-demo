@@ -17,7 +17,7 @@ sys.path.append(fastapi_path)
 
 from src.workflow.models.task import (  # pylint: disable=wrong-import-position
     Task,
-    TaskStateEnum,
+    TaskState,
 )
 from src.workflow.models.worker import Worker  # pylint: disable=wrong-import-position
 
@@ -31,14 +31,14 @@ def my_monitor(app: Celery):
     state: State = app.events.State()
 
     state_dict: dict = {
-        "task-sent": TaskStateEnum.PENDING,
-        "task-received": TaskStateEnum.RECEIVED,
-        "task-started": TaskStateEnum.STARTED,
-        "task-succeeded": TaskStateEnum.SUCCESS,
-        "task-failed": TaskStateEnum.FAILURE,
-        "task-rejected": TaskStateEnum.REJECTED,
-        "task-revoked": TaskStateEnum.REVOKED,
-        "task-retried": TaskStateEnum.RETRY,
+        "task-sent": TaskState.PENDING,
+        "task-received": TaskState.RECEIVED,
+        "task-started": TaskState.STARTED,
+        "task-succeeded": TaskState.SUCCESS,
+        "task-failed": TaskState.FAILURE,
+        "task-rejected": TaskState.REJECTED,
+        "task-revoked": TaskState.REVOKED,
+        "task-retried": TaskState.RETRY,
     }
 
     with asyncio.Runner() as runner:

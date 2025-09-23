@@ -7,7 +7,11 @@ from celery.apps.beat import Beat
 from .app import app
 
 if __name__ == "__main__":
-    beat = Beat(app=app, loglevel="info")
+    beat = Beat(
+        app=app,
+        loglevel="debug",
+        scheduler="sqlalchemy_celery_beat.schedulers:DatabaseScheduler",
+    )
     beat.run()
     # app.Beat(loglevel="info").run()
 

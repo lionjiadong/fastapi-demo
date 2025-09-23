@@ -5,4 +5,3 @@ from src.workflow.app import app
 def testa():
     # time.sleep(3)
     print("lalalala")
-    int("a")
