@@ -6,7 +6,7 @@ from pydantic import BeforeValidator
 from sqlmodel import Column, DateTime, Field, Relationship, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.database.base import TableBase
+from src.database.base import TableBase, set_table_name
 from src.database.core import async_engine
 
 if TYPE_CHECKING:
@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 
 
 class Worker(TableBase, table=True):
+    """工人表"""
+
+    __tablename__ = set_table_name("worker")
+    __table_args__ = {"comment": "工人表"}
 
     hostname: str | None = Field(default=None, description="工人主机名")
     freq: (
@@ -43,6 +47,11 @@ class Worker(TableBase, table=True):
 
     @classmethod
     async def worker_event_handler(cls, event: Dict[str, Any]):
+        """
+        工人事件处理函数
+        用于处理工人相关的事件，如心跳、启动停止等
+        """
+
         worker_validate: Worker = cls.model_validate(event)
 
         async with AsyncSession(async_engine) as session:

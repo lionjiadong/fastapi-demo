@@ -5,13 +5,6 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python 调试程序: 当前文件",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${file}",
-      "console": "integratedTerminal"
-    },
-    {
       "name": "FastAPI: dev",
       "type": "debugpy",
       "request": "launch",
@@ -22,6 +15,30 @@
       ],
       "jinja": true,
       "justMyCode": true
+    },
+    {
+      "name": "Celery: Worker",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "src.workflow.worker", // Replace 'my_module.main' with your actual module path
+      "cwd": "${workspaceFolder}", // Optional: set the working directory
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Celery: Event",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "src.workflow.events", // Replace 'my_module.main' with your actual module path
+      "cwd": "${workspaceFolder}", // Optional: set the working directory
+      "console": "integratedTerminal"
+    }
+    {
+      "name": "Celery: Beats",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "src.workflow.beats", // Replace 'my_module.main' with your actual module path
+      "cwd": "${workspaceFolder}", // Optional: set the working directory
+      "console": "integratedTerminal"
     }
   ]
 }

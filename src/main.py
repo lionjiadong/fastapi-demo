@@ -4,14 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
-
-from src.exceptions import (
-    validation_exception_handler,
-)
+from src.exceptions import validation_exception_handler
 
 from .api import api_router
-from .config import settings
-
 
 app = FastAPI(
     middleware=[

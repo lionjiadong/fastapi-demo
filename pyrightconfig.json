@@ -1,0 +1,6 @@
+{
+    "ignore": [
+        "src/__init__.py",
+        "src/database/revisions/env.py"
+    ],
+}

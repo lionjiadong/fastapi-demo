@@ -1,7 +1,6 @@
-import enum
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING, Annotated, Any, Dict, Optional
+from typing import Annotated, Any, Dict, Optional
 
 from pydantic import UUID4, BeforeValidator, JsonValue
 from sqlmodel import JSON, Column, DateTime, Enum, Field, Relationship, select
@@ -9,33 +8,15 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.database.base import TableBase, set_table_name
 from src.database.core import async_engine
-
-# if TYPE_CHECKING:
 from src.workflow.models.worker import Worker
-
-
-class TaskStateEnum(str, enum.Enum):
-    __tablename__ = set_table_name("enum_task_state")
-
-    #: Task state is unknown (assumed pending since you know the id).
-    PENDING = "PENDING"
-    #: Task was received by a worker (only used in events).
-    RECEIVED = "RECEIVED"
-    #: Task was started by a worker (:setting:`task_track_started`).
-    STARTED = "STARTED"
-    #: Task succeeded
-    SUCCESS = "SUCCESS"
-    #: Task failed
-    FAILURE = "FAILURE"
-    #: Task was revoked.
-    REVOKED = "REVOKED"
-    #: Task was rejected (only used in events).
-    REJECTED = "REJECTED"
-    #: Task is waiting for retry.
-    RETRY = "RETRY"
+from src.workflow.schemas.enum import TaskStateEnum
 
 
 class Task(TableBase, table=True):
+    """任务表"""
+
+    __tablename__ = set_table_name("task")
+    __table_args__ = {"comment": "任务表"}
 
     args: Optional[JsonValue] = Field(
         default=None, description="任务参数", sa_column=Column(JSON)
@@ -137,6 +118,10 @@ class Task(TableBase, table=True):
 
     @classmethod
     async def task_event_handler(cls, event: Dict[str, Any]):
+        """
+        任务事件处理函数
+        用于处理任务相关的事件，如任务发送,接收,开始,完成,失败等
+        """
         task_validate: Task = cls.model_validate(event)
 
         async with AsyncSession(async_engine) as session:

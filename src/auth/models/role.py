@@ -10,15 +10,17 @@ if TYPE_CHECKING:
 
 
 class RoleBase(SQLModel):
+    """角色基础模型"""
+
     name: str
     code: str
 
 
-class RoleOut(RoleBase, OperationMixin):
-    pass
-
-
 class Role(TableBase, RoleBase, OperationMixin, table=True):
+    """角色表"""
+
+    __tablename__ = set_table_name("role")
+    __table_args__ = {"comment": "角色表"}
 
     users: list["User"] = Relationship(
         back_populates="roles",

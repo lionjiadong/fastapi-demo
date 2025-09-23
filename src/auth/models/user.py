@@ -1,4 +1,3 @@
-from re import A
 from typing import TYPE_CHECKING, Any, Self
 
 import bcrypt
@@ -16,15 +15,17 @@ if TYPE_CHECKING:
 
 
 class UserBase(SQLModel):
+    """用户基础模型"""
+
     username: str = Field(unique=True, title="用户名")
     email: EmailStr | None = None
 
 
-class UserOut(UserBase, OperationMixin):
-    id: int
-
-
 class User(TableBase, UserBase, OperationMixin, table=True):
+    """用户表"""
+
+    __tablename__ = set_table_name("user")
+    __table_args__ = {"comment": "用户表"}
 
     hashed_password: str
 
@@ -35,6 +36,7 @@ class User(TableBase, UserBase, OperationMixin, table=True):
     )
 
     async def check_pwd(self, password: str) -> Self:
+        """校验密码"""
         if not bcrypt.checkpw(
             password.encode("utf-8"), self.hashed_password.encode("utf-8")
         ):
@@ -43,19 +45,22 @@ class User(TableBase, UserBase, OperationMixin, table=True):
 
     @staticmethod
     def hash_pwd(password: str) -> str:
+        """哈希密码"""
         return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
     @model_validator(mode="wrap")
     @classmethod
-    def log_failed_validation(
+    def user_validation(
         cls, data: Any, handler: ModelWrapValidatorHandler[Self]
     ) -> Self:
+        """用户模型校验"""
         if "password" in data:
             data["hashed_password"] = cls.hash_pwd(data["password"])
         return handler(data)
 
     @classmethod
     async def get_user(cls, user_id: int) -> Self:
+        """根据用户ID获取用户"""
         async with AsyncSession(async_engine) as session:
             user_db = (
                 await session.exec(

@@ -19,13 +19,13 @@ class DescriptionMeta(SQLModelMetaclass):
     """自动将字段描述添加到数据库列注释中"""
 
     def __new__(
-        cls,
+        mcs,
         name: str,
         bases: Tuple[Type[Any], ...],
         class_dict: Dict[str, Any],
         **kwargs: Any,
     ) -> Any:
-        new_class = super().__new__(cls, name, bases, class_dict, **kwargs)
+        new_class = super().__new__(mcs, name, bases, class_dict, **kwargs)
         fields = new_class.model_fields
         for k, field in fields.items():
             desc = field.description
@@ -48,6 +48,10 @@ class DescriptionMeta(SQLModelMetaclass):
 
 
 class TableBase(SQLModel, metaclass=DescriptionMeta):
+    """
+    基础表模型
+    """
+
     id: int | None = Field(default=None, primary_key=True)
 
 
@@ -99,7 +103,7 @@ class OperationMixin(SQLModel):
             raise HTTPException(
                 status_code=400,
                 detail=f"唯一键冲突:{error.group() if error else e.args}",
-            )
+            ) from e
         return self
 
     async def create(self, session: AsyncSession, current_user: "User") -> Self:

@@ -1,19 +1,21 @@
 from fastapi import APIRouter, Depends, Query
 from sqlmodel import select
+
 from src.auth.models.auth import get_current_user
 from src.auth.models.user import User
-from src.database.core import SessionDep
 from src.auth.schemas.user import UserCreate, UserOutLinks, UserUpdate
+from src.database.core import SessionDep
 
 user_router = APIRouter(
     prefix="/users",
     tags=["user"],
-    dependencies=[Depends(get_current_user)],
+    # dependencies=[Depends(get_current_user)],
 )
 
 
 @user_router.get("/me", response_model=UserOutLinks)
 async def read_users_me(current_user: User = Depends(get_current_user)):
+    """获取当前用户"""
     return current_user
 
 
@@ -23,6 +25,7 @@ async def read_users(
     offset: int = 0,
     limit: int = Query(default=100, le=100),
 ):
+    """获取多个用户"""
     users = (await session.exec(select(User).offset(offset).limit(limit))).all()
     return users
 
@@ -33,12 +36,14 @@ async def create_user(
     session: SessionDep,
     current_user: User = Depends(get_current_user),
 ):
+    """创建用户"""
     user = User.model_validate(data.model_dump())
     return await user.create(session, current_user)
 
 
 @user_router.get("/{user_id}", response_model=UserOutLinks)
 async def read_user(user_id: int, session: SessionDep):
+    """获取单个用户"""
     return await User.get_by_id(session, user_id)
 
 
@@ -49,6 +54,7 @@ async def update_user(
     session: SessionDep,
     current_user: User = Depends(get_current_user),
 ):
+    """更新用户"""
     user = await User.get_by_id(session, user_id)
     return await user.update(
         session=session,
@@ -63,6 +69,7 @@ async def delete_user(
     session: SessionDep,
     current_user: User = Depends(get_current_user),
 ):
+    """删除用户"""
     user = await User.get_by_id(session, user_id)
     await user.delete(session=session, current_user=current_user)
     return {"ok": True}

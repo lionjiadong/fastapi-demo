@@ -1,11 +1,9 @@
-from functools import lru_cache
-from typing import Annotated
-
-from fastapi import Depends
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    """配置类"""
+
     # database
     database_url: str
 
@@ -29,10 +27,4 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file="local.env", env_parse_none_str="None")
 
 
-# @lru_cache
-# def get_settings():
-#     return Settings()  # pyright: ignore[reportCallIssue]
-
-
-# setting = Annotated[Settings, Depends(get_settings)]
 settings: Settings = Settings()  # pyright: ignore[reportCallIssue]

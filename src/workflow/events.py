@@ -1,23 +1,33 @@
+"""
+celery事件监听模块
+"""
+
 import asyncio
 import os
 import sys
-from re import A
 from typing import Any
 
-from pydantic import ValidationError
+from celery import Celery
+from celery.events.state import State
 
 fastapi_path = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 sys.path.append(fastapi_path)
-from celery import Celery
-from celery.events.state import State
 
-from src.workflow.models.task import Task, TaskStateEnum
-from src.workflow.models.worker import Worker
+from src.workflow.models.task import (  # pylint: disable=wrong-import-position
+    Task,
+    TaskStateEnum,
+)
+from src.workflow.models.worker import Worker  # pylint: disable=wrong-import-position
 
 
 def my_monitor(app: Celery):
+    """
+    监听celery任务和worker状态
+    参考: https://docs.celeryq.dev/en/stable/userguide/monitoring.html
+    """
+
     state: State = app.events.State()
 
     state_dict: dict = {
@@ -36,13 +46,10 @@ def my_monitor(app: Celery):
         def task_event_handle(event: dict[str, Any]) -> None:
             state.event(event)
             task = state.tasks.get(event["uuid"])
-            print(task)
-
             if not task:
                 return
             event_data: dict = task.__dict__
             event_data.update({"state": state_dict.get(event["type"])})
-            print(f"task event: {event_data}")
             runner.run(Task.task_event_handler(event_data))
 
         def worker_event_handle(event: dict[str, Any]) -> None:
