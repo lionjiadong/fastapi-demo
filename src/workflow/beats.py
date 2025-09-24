@@ -10,9 +10,7 @@ if __name__ == "__main__":
     beat = Beat(
         app=app,
         loglevel="debug",
-        scheduler="sqlalchemy_celery_beat.schedulers:DatabaseScheduler",
+        scheduler="src.workflow.scheduler.schedulers:DatabaseScheduler",
     )
-    beat.run()
-    # app.Beat(loglevel="info").run()
 
-# pyinstaller --onefile main.py --additional-hooks-dir=pyinstaller_hooks_folder
+    beat.run()

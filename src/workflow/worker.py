@@ -1,6 +1,6 @@
 """
 Worker主入口
-构建模块
+构建工人进程入口
 """
 
 from celery.apps.worker import Worker

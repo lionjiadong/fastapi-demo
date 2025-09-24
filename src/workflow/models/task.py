@@ -18,8 +18,8 @@ class Task(TableBase, table=True):
     __tablename__ = set_table_name("task")
     __table_args__ = {"comment": "任务表"}
 
-    args: Optional[JsonValue] = Field(
-        default=None, description="任务参数", sa_column=Column(JSON)
+    args: tuple = Field(
+        default=None, description="任务位置参数", sa_column=Column(JSON)
     )
     client: Optional[str] = Field(default=None, description="任务客户端")
     clock: Optional[int] = Field(default=None, description="任务时钟")
@@ -41,7 +41,9 @@ class Task(TableBase, table=True):
         description="任务失败时间",
     )
     hostname: Optional[str] = Field(default=None, description="任务主机名")
-    kwargs: Optional[str] = Field(default=None, description="任务关键字参数")
+    kwargs: dict = Field(
+        default=None, sa_column=Column(JSON), description="任务关键字参数"
+    )
     local_received: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
@@ -51,7 +53,7 @@ class Task(TableBase, table=True):
     parent_id: Optional[UUID4] = Field(default=None, description="任务父ID")
     pid: Optional[int] = Field(default=None, description="任务进程ID")
     queue: Optional[str] = Field(default=None, description="任务队列")
-    requeue: bool | None = Field(default=None, description="任务是否重新入队")
+    requeue: Optional[bool] = Field(default=None, description="任务是否重新入队")
     received: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),

@@ -1,8 +1,11 @@
 {
   "cSpell.words": [
     "asyncpg",
+    "cronexp",
     "gensalt",
     "hashpw",
+    "nowfun",
+    "onupdate",
     "poolclass",
     "redoc",
     "selectin",
@@ -11,12 +14,20 @@
     "syncify"
   ],
   "[python]": {
-    "editor.defaultFormatter": "ms-python.black-formatter",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
-      "source.organizeImports": "explicit",
-      "source.unusedImports": "explicit"
-    }
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+      // "source.organizeImports": "explicit",
+      // "source.unusedImports": "explicit"
+    },
+    "editor.defaultFormatter": "charliermarsh.ruff"
   },
-  "isort.args": ["--profile", "black"]
+  "ruff.configurationPreference": "filesystemFirst",
+  "ruff.configuration": {
+    // "exclude": ["src/__init__.py", "src/database/revisions/env.py"]
+  },
+  "ruff.lineLength": 88,
+  "ruff.fixAll": true,
+  "ruff.organizeImports": true
 }

@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from pydantic_core import PydanticUndefined
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import declared_attr
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, SQLModel, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel.main import SQLModelMetaclass
 
@@ -64,11 +64,12 @@ class OperationMixin(SQLModel):
         default=True, title="是否有效", description="true有效,反之false"
     )
 
-    create_time: datetime | None = Field(
+    create_dt: datetime | None = Field(
         default_factory=datetime.now, nullable=False, title="创建时间"
     )
-    update_time: datetime | None = Field(
-        default_factory=datetime.now, nullable=False, title="更新时间"
+    update_dt: datetime | None = Field(
+        sa_column_kwargs={"onupdate": func.now},
+        description="更新时间",
     )
     delete_time: datetime | None = Field(default=None, nullable=True, title="删除时间")
 
