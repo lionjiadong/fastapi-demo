@@ -1,6 +1,9 @@
 {
   "cSpell.words": [
     "asyncpg",
+    "backref",
+    "clockedschedule",
+    "clockedschedules",
     "cronexp",
     "gensalt",
     "hashpw",

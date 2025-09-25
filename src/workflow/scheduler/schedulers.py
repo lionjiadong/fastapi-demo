@@ -1,8 +1,8 @@
 """Beat Scheduler Implementation."""
 
-import datetime
 import logging
 import math
+from datetime import datetime, timedelta, timezone
 from multiprocessing.util import Finalize
 
 import sqlalchemy as sa
@@ -19,7 +19,7 @@ from src.workflow.models.scheduler import (
     CrontabSchedule,
     IntervalSchedule,
     PeriodicTask,
-    PeriodicTasksChanged,
+    PeriodicTaskChanged,
     SolarSchedule,
 )
 from src.workflow.scheduler.clocked_schedule import clocked
@@ -87,9 +87,7 @@ class ModelEntry(ScheduleEntry):
             # This will trigger the job to run at start_time
             # and avoid the heap block.
             if self.model.start_time:
-                model.last_run_at = model.last_run_at - datetime.timedelta(
-                    days=365 * 30
-                )
+                model.last_run_at = model.last_run_at - timedelta(days=365 * 30)
 
         self.last_run_at = model.last_run_at
         self.session_func = session_func
@@ -135,7 +133,7 @@ class ModelEntry(ScheduleEntry):
 
     def _default_now(self):
         if getattr(self.app.conf, "CELERY_BEAT_TZ_AWARE", True):
-            now = datetime.datetime.now(self.app.timezone)
+            now = datetime.now(self.app.timezone)
         else:
             # this ends up getting passed to maybe_make_aware, which expects
             # all naive datetime objects to be in utc time.
@@ -155,7 +153,11 @@ class ModelEntry(ScheduleEntry):
         session.commit()
 
     @classmethod
-    def to_model_schedule(cls, schedule: schedules.schedule, session: Session):
+    def to_model_schedule(
+        cls,
+        schedule: int | float | timedelta | schedules.BaseSchedule,
+        session: Session,
+    ):
         for schedule_type, model_type, model_field in cls.model_schedules:
             schedule = schedules.maybe_schedule(schedule)
             if isinstance(schedule, schedule_type):
@@ -165,6 +167,68 @@ class ModelEntry(ScheduleEntry):
         raise ValueError(f"Cannot convert schedule type {schedule!r} to model")
 
     @classmethod
+    def _unpack_options(
+        cls,
+        queue=None,
+        exchange=None,
+        routing_key=None,
+        priority=None,
+        headers=None,
+        one_off=False,
+        expire_seconds=None,
+        expires=None,
+        start_time=None,
+    ):
+        data = {
+            "queue": queue,
+            "exchange": exchange,
+            "routing_key": routing_key,
+            "priority": priority,
+            "headers": headers or {},
+            "one_off": one_off,
+            "start_time": start_time,
+            "expire_seconds": expire_seconds,
+        }
+        if expires:
+            if isinstance(expires, int):
+                data["expire_seconds"] = expires
+            elif isinstance(expires, timedelta):
+                data["expires"] = datetime.now(tz=timezone.utc) + expires
+        return data
+
+    @classmethod
+    def _unpack_fields(
+        cls,
+        session,
+        schedule,
+        args=None,
+        kwargs=None,
+        relative=None,
+        options=None,
+        **entry,
+    ):
+        """
+
+        **entry sample:
+
+            {'task': 'celery.backend_cleanup',
+             'schedule': <crontab: 0 4 * * * (m/h/d/dM/MY)>,
+             'options': {'expires': 43200}}
+
+        """
+        model_schedule = cls.to_model_schedule(session, schedule)
+        logging.debug("model_schedule: %s", model_schedule)
+        entry.update(
+            # the model_id which to relationship
+            # {model_field + '_id': model_schedule.id},
+            {"schedule_model": model_schedule},
+            args=args or [],
+            kwargs=kwargs or {},
+            **cls._unpack_options(**options or {}),
+        )
+        return entry
+
+    @classmethod
     def from_entry(
         cls,
         name: str,
@@ -172,7 +236,7 @@ class ModelEntry(ScheduleEntry):
         app: Celery | None = None,
         **entry,
     ):
-        print(entry)
+        print(f"entry: {entry}")
         task = PeriodicTask(
             name=name,
             **entry,
@@ -206,7 +270,10 @@ class DatabaseScheduler(Scheduler):
         # DB handling
         self.app = kwargs.get("app") or current_app._get_current_object()
         self.dburi = dburi or self.app.conf.beat_dburi
-        self.engine = create_engine(self.dburi)
+        self.engine = create_engine(
+            self.dburi,
+            echo=True,
+        )
         if not self._database_initialized:
             self._database_initialized = True
             SQLModel.metadata.create_all(self.engine)
@@ -246,9 +313,9 @@ class DatabaseScheduler(Scheduler):
 
     def schedule_changed(self):
         with self.get_session() as session:
-            changes = session.get(PeriodicTasksChanged, 1)
+            changes = session.get(PeriodicTaskChanged, 1)
             if not changes:
-                session.add(PeriodicTasksChanged(id=1))
+                session.add(PeriodicTaskChanged(id=1))
                 session.commit()
                 return False
             last, ts = self._last_timestamp, changes.last_update
@@ -284,15 +351,16 @@ class DatabaseScheduler(Scheduler):
         logger.debug(f"update_from_dict: {dict_}")
         s = {}
         for name, entry_fields in dict_.items():
-            try:
-                entry = ModelEntry.from_entry(
-                    name, session=self.get_session(), app=self.app, **entry_fields
-                )
-                if entry.model.enabled:
-                    s[name] = entry
+            logging.debug(f"name, entry_fields: {name} {entry_fields}")
+            # try:
+            entry = ModelEntry.from_entry(
+                name, session=self.get_session(), app=self.app, **entry_fields
+            )
+            if entry.model.enabled:
+                s[name] = entry
 
-            except Exception as exc:
-                logger.exception(ADD_ENTRY_ERROR, name, exc, entry_fields)
+            # except Exception as exc:
+            # logger.exception(ADD_ENTRY_ERROR, name, exc, entry_fields)
         logger.debug(f"s: {s}")
         self.schedule.update(s)
 

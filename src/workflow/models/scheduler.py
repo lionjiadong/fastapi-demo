@@ -240,7 +240,7 @@ class ClockedSchedule(ModelMixin, table=True):
         return c
 
 
-class PeriodicTasksChanged(ModelMixin, table=True):
+class PeriodicTaskChanged(ModelMixin, table=True):
     """Helper table for tracking updates to periodic tasks.
 
     This stores a single row with ``id=1``. ``last_update`` is updated via
@@ -448,15 +448,15 @@ class PeriodicTask(ModelMixin, table=True):
         return self.scheduler.schedule
 
 
-listen(PeriodicTask, "after_insert", PeriodicTasksChanged.update_changed)
-listen(PeriodicTask, "after_delete", PeriodicTasksChanged.update_changed)
-listen(PeriodicTask, "after_update", PeriodicTasksChanged.changed)
-listen(IntervalSchedule, "after_insert", PeriodicTasksChanged.update_changed)
-listen(IntervalSchedule, "after_delete", PeriodicTasksChanged.update_changed)
-listen(IntervalSchedule, "after_update", PeriodicTasksChanged.update_changed)
-listen(CrontabSchedule, "after_insert", PeriodicTasksChanged.update_changed)
-listen(CrontabSchedule, "after_delete", PeriodicTasksChanged.update_changed)
-listen(CrontabSchedule, "after_update", PeriodicTasksChanged.update_changed)
-listen(SolarSchedule, "after_insert", PeriodicTasksChanged.update_changed)
-listen(SolarSchedule, "after_delete", PeriodicTasksChanged.update_changed)
-listen(SolarSchedule, "after_update", PeriodicTasksChanged.update_changed)
+listen(PeriodicTask, "after_insert", PeriodicTaskChanged.update_changed)
+listen(PeriodicTask, "after_delete", PeriodicTaskChanged.update_changed)
+listen(PeriodicTask, "after_update", PeriodicTaskChanged.changed)
+listen(IntervalSchedule, "after_insert", PeriodicTaskChanged.update_changed)
+listen(IntervalSchedule, "after_delete", PeriodicTaskChanged.update_changed)
+listen(IntervalSchedule, "after_update", PeriodicTaskChanged.update_changed)
+listen(CrontabSchedule, "after_insert", PeriodicTaskChanged.update_changed)
+listen(CrontabSchedule, "after_delete", PeriodicTaskChanged.update_changed)
+listen(CrontabSchedule, "after_update", PeriodicTaskChanged.update_changed)
+listen(SolarSchedule, "after_insert", PeriodicTaskChanged.update_changed)
+listen(SolarSchedule, "after_delete", PeriodicTaskChanged.update_changed)
+listen(SolarSchedule, "after_update", PeriodicTaskChanged.update_changed)
