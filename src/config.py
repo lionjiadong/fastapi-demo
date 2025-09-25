@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     timezone: str
     beat_dburi: str
     # beat_schema: str | None
-    beat_engine_options: dict | None
+    # beat_engine_options: dict | None
 
     model_config = SettingsConfigDict(env_file="local.env", env_parse_none_str="None")
 

@@ -1,10 +1,9 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Optional
 from zoneinfo import ZoneInfo
 
 from celery import current_app, schedules
 from celery.utils.log import get_logger
-from celery.utils.time import maybe_make_aware
 from cron_descriptor import (
     FormatException,
     MissingFieldException,
@@ -25,13 +24,12 @@ from sqlmodel import (
     Session,
     SQLModel,
     col,
-    func,
     insert,
     select,
     update,
 )
 
-from src.database.base import TableBase, set_table_name
+from src.database.base import set_table_name
 from src.workflow.scheduler.clocked_schedule import clocked
 from src.workflow.scheduler.tz_crontab import TzAwareCrontab
 from src.workflow.scheduler.util import cronexp, make_aware, nowfun
@@ -45,10 +43,16 @@ class ModelMixin(SQLModel):
 
     id: int = Field(primary_key=True)
     created_dt: datetime = Field(
-        default_factory=datetime.now, nullable=False, title="创建时间"
+        sa_type=DateTime(timezone=True),
+        default_factory=nowfun,
+        title="创建时间",
     )
     updated_dt: datetime = Field(
-        sa_column_kwargs={"onupdate": func.now},
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={
+            "onupdate": nowfun,
+        },
+        default_factory=nowfun,
         description="更新时间",
     )
 
@@ -236,7 +240,7 @@ class ClockedSchedule(ModelMixin, table=True):
         return c
 
 
-class PeriodicTasksChanged(TableBase, table=True):
+class PeriodicTasksChanged(ModelMixin, table=True):
     """Helper table for tracking updates to periodic tasks.
 
     This stores a single row with ``id=1``. ``last_update`` is updated via
@@ -250,7 +254,7 @@ class PeriodicTasksChanged(TableBase, table=True):
 
     last_update: datetime = Field(
         sa_column=Column(DateTime(timezone=True)),
-        default=lambda: maybe_make_aware(datetime.now(tz=timezone.utc)),
+        default=nowfun(),
     )
 
     @classmethod
@@ -275,16 +279,12 @@ class PeriodicTasksChanged(TableBase, table=True):
             connection.execute(
                 insert(cls).values(
                     id=1,
-                    last_update=lambda: maybe_make_aware(datetime.now(tz=timezone.utc)),
+                    last_update=nowfun(),
                 )
             )
         else:
             connection.execute(
-                update(cls)
-                .where(col(cls.id) == 1)
-                .values(
-                    last_update=lambda: maybe_make_aware(datetime.now(tz=timezone.utc))
-                )
+                update(cls).where(col(cls.id) == 1).values(last_update=nowfun())
             )
 
     @classmethod
@@ -297,7 +297,7 @@ class PeriodicTasksChanged(TableBase, table=True):
             pass
 
 
-class PeriodicTask(TableBase, table=True):
+class PeriodicTask(ModelMixin, table=True):
     """任务计划表"""
 
     __tablename__ = set_table_name("periodic_task")
@@ -357,10 +357,10 @@ class PeriodicTask(TableBase, table=True):
         sa_column=Column(DateTime(timezone=True)),
         description="计划上次触发任务运行的日期时间",
     )
-    total_run_count: Optional[int] = Field(default=None, description="任务运行次数")
+    total_run_count: int = Field(default=0, description="任务运行次数")
 
     date_changed: Optional[datetime] = Field(
-        default=lambda: maybe_make_aware(datetime.now(tz=timezone.utc)),
+        default=nowfun(),
         description="上次修改此PeriodicTask的日期",
     )
     description: Optional[str] = Field(

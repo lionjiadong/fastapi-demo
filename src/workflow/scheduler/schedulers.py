@@ -8,10 +8,11 @@ from multiprocessing.util import Finalize
 import sqlalchemy as sa
 from celery import Celery, current_app, schedules
 from celery.beat import ScheduleEntry, Scheduler
+from celery.utils.log import get_logger
 from celery.utils.time import maybe_make_aware
 from kombu.utils.encoding import safe_repr, safe_str
 from kombu.utils.json import loads
-from sqlmodel import Session, SQLModel, create_engine, select
+from sqlmodel import Session, SQLModel, col, create_engine, select
 
 from src.workflow.models.scheduler import (
     ClockedSchedule,
@@ -21,10 +22,10 @@ from src.workflow.models.scheduler import (
     PeriodicTasksChanged,
     SolarSchedule,
 )
+from src.workflow.scheduler.clocked_schedule import clocked
+from src.workflow.scheduler.util import NEVER_CHECK_TIMEOUT, nowfun
 
-from .clocked_schedule import clocked
-from .util import NEVER_CHECK_TIMEOUT, nowfun
-
+logger = get_logger("sqlalchemy_celery_beat.schedulers")
 # This scheduler must wake up more frequently than the
 # regular of 5 minutes because it needs to take external
 # changes to the schedule into account.
@@ -168,10 +169,10 @@ class ModelEntry(ScheduleEntry):
         cls,
         name: str,
         session: Session,
-        schedule: schedules.schedule,
         app: Celery | None = None,
         **entry,
     ):
+        print(entry)
         task = PeriodicTask(
             name=name,
             **entry,
@@ -224,6 +225,7 @@ class DatabaseScheduler(Scheduler):
         return self.get_session
 
     def setup_schedule(self):
+        logger.info("setup_schedule")
         self.install_default_entries(self.schedule)
         self.update_from_dict(self.app.conf.beat_schedule)
 
@@ -232,7 +234,7 @@ class DatabaseScheduler(Scheduler):
         s = {}
         with self.get_session() as session:
             for model in session.exec(
-                select(PeriodicTask).where(PeriodicTask.enabled == True)
+                select(PeriodicTask).where(col(PeriodicTask.enabled) == True)
             ).all():
                 try:
                     s[model.name] = ModelEntry(
@@ -278,9 +280,10 @@ class DatabaseScheduler(Scheduler):
             # retry later, only for the failed ones
             self._dirty |= _failed
 
-    def update_from_dict(self, mapping: dict[str, dict]):
+    def update_from_dict(self, dict_: dict[str, dict]):
+        logger.debug(f"update_from_dict: {dict_}")
         s = {}
-        for name, entry_fields in mapping.items():
+        for name, entry_fields in dict_.items():
             try:
                 entry = ModelEntry.from_entry(
                     name, session=self.get_session(), app=self.app, **entry_fields
@@ -289,7 +292,8 @@ class DatabaseScheduler(Scheduler):
                     s[name] = entry
 
             except Exception as exc:
-                logging.exception(ADD_ENTRY_ERROR, name, exc, entry_fields)
+                logger.exception(ADD_ENTRY_ERROR, name, exc, entry_fields)
+        logger.debug(f"s: {s}")
         self.schedule.update(s)
 
     def install_default_entries(self, data):

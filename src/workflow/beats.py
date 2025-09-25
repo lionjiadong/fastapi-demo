@@ -10,6 +10,7 @@ if __name__ == "__main__":
     beat = Beat(
         app=app,
         loglevel="debug",
+        # scheduler="sqlalchemy_celery_beat.schedulers:DatabaseScheduler",
         scheduler="src.workflow.scheduler.schedulers:DatabaseScheduler",
     )
 
