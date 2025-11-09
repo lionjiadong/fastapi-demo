@@ -15,11 +15,8 @@ fastapi_path = os.path.dirname(
 )
 sys.path.append(fastapi_path)
 
-from src.workflow.models.task import (  # pylint: disable=wrong-import-position
-    Task,
-    TaskState,
-)
-from src.workflow.models.worker import Worker  # pylint: disable=wrong-import-position
+from src.workflow.models.task import Task, TaskState
+from src.workflow.models.worker import Worker
 
 
 def my_monitor(app: Celery):

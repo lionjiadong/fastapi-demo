@@ -214,7 +214,8 @@ class CrontabSchedule(ModelMixin, table=True):
             "timezone": schedule.tz,
         }
         try:
-            return session.get(cls, **spec)
+            return session.exec(select(cls).where(**spec)).one()
+            # return session.get(cls, **spec)
         except NoResultFound:
             return cls(**spec)
         except MultipleResultsFound:

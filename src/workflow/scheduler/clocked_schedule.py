@@ -6,7 +6,7 @@ from typing import Optional
 from celery import schedules
 from celery.utils.time import maybe_make_aware
 
-from src.workflow.scheduler.util import NEVER_CHECK_TIMEOUT
+from .util import NEVER_CHECK_TIMEOUT
 
 
 class clocked(schedules.BaseSchedule):

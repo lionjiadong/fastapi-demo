@@ -6,6 +6,7 @@ from src.workflow.models.scheduler import (
     CrontabSchedule,
     IntervalSchedule,
     PeriodicTask,
+    PeriodicTaskChanged,
     SolarSchedule,
 )
 from src.workflow.models.task import Task

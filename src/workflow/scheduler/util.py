@@ -1,16 +1,14 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 NEVER_CHECK_TIMEOUT = 9999999999
 
 
 def nowfun() -> datetime:
-    """获取当前时间，时区为UTC"""
-    return datetime.now(timezone.utc)
+    return datetime.now(tz=ZoneInfo("UTC"))
 
 
 def make_aware(value: datetime) -> datetime:
-    """将时间转换为UTC时区"""
     if value.tzinfo is None:
         return value.replace(tzinfo=ZoneInfo("UTC"))
     else:

@@ -3,7 +3,6 @@
 from collections import namedtuple
 from datetime import datetime
 from zoneinfo import ZoneInfo
-
 from celery import schedules
 
 schedstate = namedtuple("schedstate", ("is_due", "next"))
@@ -63,7 +62,9 @@ class TzAwareCrontab(schedules.crontab):
         return """<crontab: {0._orig_minute} {0._orig_hour}
          {0._orig_day_of_week} {0._orig_day_of_month}
           {0._orig_month_of_year} (m/h/d/dM/MY), {0.tz}>
-        """.format(self)
+        """.format(
+            self
+        )
 
     def __reduce__(self):
         return (

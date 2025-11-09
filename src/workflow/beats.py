@@ -11,7 +11,7 @@ if __name__ == "__main__":
         app=app,
         loglevel="debug",
         # scheduler="sqlalchemy_celery_beat.schedulers:DatabaseScheduler",
-        scheduler="src.workflow.scheduler2.schedulers:DatabaseScheduler",
+        scheduler="src.workflow.scheduler.schedulers:DatabaseScheduler",
     )
 
     beat.run()
