@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from pydantic_core import PydanticUndefined
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import declared_attr
-from sqlmodel import Field, SQLModel, func
+from sqlmodel import DateTime, Field, SQLModel, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel.main import SQLModelMetaclass
 
@@ -64,22 +64,24 @@ class OperationMixin(SQLModel):
         default=True, title="是否有效", description="true有效,反之false"
     )
 
-    create_dt: datetime | None = Field(
-        default_factory=datetime.now, nullable=False, title="创建时间"
-    )
-    update_dt: datetime | None = Field(
-        sa_column_kwargs={"onupdate": func.now},
-        description="更新时间",
-    )
-    delete_time: datetime | None = Field(default=None, nullable=True, title="删除时间")
+    create_dt: datetime | None = Field(default_factory=datetime.now, title="创建时间")
 
-    create_user_id: int | None = Field(
+    update_dt: datetime | None = Field(
+        default_factory=datetime.now,
+        sa_type=DateTime(),
+        sa_column_kwargs={"onupdate": func.now()},
+        title="更新时间",
+    )
+
+    delete_dt: datetime | None = Field(default=None, nullable=True, title="删除时间")
+
+    create_user: int | None = Field(
         default=None, foreign_key="user.id", title="创建用户"
     )
-    update_user_id: int | None = Field(
+    update_user: int | None = Field(
         default=None, foreign_key="user.id", title="更新用户"
     )
-    delete_user_id: int | None = Field(
+    delete_user: int | None = Field(
         default=None, foreign_key="user.id", title="删除用户"
     )
 
@@ -93,7 +95,6 @@ class OperationMixin(SQLModel):
         return db_obj
 
     async def session_save(self, session: AsyncSession) -> Self:
-
         try:
             session.add(self)
             await session.commit()
@@ -108,8 +109,8 @@ class OperationMixin(SQLModel):
         return self
 
     async def create(self, session: AsyncSession, current_user: "User") -> Self:
-        self.create_user_id = current_user.id
-        self.update_user_id = current_user.id
+        self.create_user = current_user.id
+        self.update_user = current_user.id
         return await self.session_save(session)
 
     async def update(
@@ -118,16 +119,16 @@ class OperationMixin(SQLModel):
         data: Union[Dict[str, Any], BaseModel],
         current_user: "User",
     ) -> Self:
-        self.update_user_id = current_user.id
-        self.update_time = datetime.now()
+        self.update_user = current_user.id
+        # self.update_time = datetime.now()
         self.sqlmodel_update(data)
 
         return await self.session_save(session)
 
     async def delete(self, session: AsyncSession, current_user: "User") -> None:
         self.active = False
-        self.delete_time = datetime.now()
-        self.delete_user_id = current_user.id
+        self.delete_dt = datetime.now()
+        self.delete_user = current_user.id
         await self.session_save(session)
         return None
 
