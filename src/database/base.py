@@ -61,27 +61,30 @@ class OperationMixin(SQLModel):
     """
 
     active: bool = Field(
-        default=True, title="是否有效", description="true有效,反之false"
+        default=True,
+        title="是否有效",
+        description="true有效,反之false",
+        sa_column_kwargs={"server_default": "true"},
     )
 
-    create_dt: datetime | None = Field(default_factory=datetime.now, title="创建时间")
+    create_dt: datetime = Field(default_factory=datetime.now, title="创建时间")
 
-    update_dt: datetime | None = Field(
+    update_dt: datetime = Field(
         default_factory=datetime.now,
-        sa_type=DateTime(),
+        sa_type=DateTime(),  # type: ignore
         sa_column_kwargs={"onupdate": func.now()},
         title="更新时间",
     )
 
     delete_dt: datetime | None = Field(default=None, nullable=True, title="删除时间")
 
-    create_user: int | None = Field(
+    create_user_id: int | None = Field(
         default=None, foreign_key="user.id", title="创建用户"
     )
-    update_user: int | None = Field(
+    update_user_id: int | None = Field(
         default=None, foreign_key="user.id", title="更新用户"
     )
-    delete_user: int | None = Field(
+    delete_user_id: int | None = Field(
         default=None, foreign_key="user.id", title="删除用户"
     )
 
