@@ -24,6 +24,7 @@ async def read_users(
     session: SessionDep,
     offset: int = 0,
     limit: int = Query(default=100, le=100),
+    current_user: User = Depends(get_current_user),
 ):
     """获取多个用户"""
     users = (await session.exec(select(User).offset(offset).limit(limit))).all()
@@ -42,7 +43,9 @@ async def create_user(
 
 
 @user_router.get("/{user_id}", response_model=UserOutLinks)
-async def read_user(user_id: int, session: SessionDep):
+async def read_user(
+    user_id: int, session: SessionDep, current_user: User = Depends(get_current_user)
+):
     """获取单个用户"""
     return await User.get_by_id(session, user_id)
 
