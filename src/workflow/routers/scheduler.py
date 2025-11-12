@@ -32,5 +32,6 @@ async def create_periodic_task(
     """创建角色"""
     print(f"create_periodic_task: {data}")
     print(f"create_periodic_task: {data.model_dump()}")
-    periodic_task = PeriodicTask.model_validate(data.model_dump())
-    return await periodic_task.create(session, current_user)
+    # periodic_task = PeriodicTask.model_validate(data.model_dump())
+    # return await periodic_task.create(session, current_user)
+    return data

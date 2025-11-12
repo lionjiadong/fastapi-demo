@@ -1,13 +1,14 @@
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Self
 
 import bcrypt
 from pydantic import EmailStr, ModelWrapValidatorHandler, model_validator
-from sqlmodel import Field, Relationship, SQLModel, select
+from sqlmodel import Field, Relationship, SQLModel, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.auth.exception import authenticate_exception, inactive_exception
 from src.auth.models.links import UserRoleLink
-from src.database.base import OperationMixin, TableBase, set_table_name
+from src.database.base import TableBase, set_table_name
 from src.database.core import async_engine
 
 if TYPE_CHECKING:
@@ -20,8 +21,16 @@ class UserBase(SQLModel):
     username: str = Field(unique=True, title="用户名")
     email: EmailStr | None = None
 
+    create_dt: datetime = Field(default_factory=datetime.now, title="创建时间")
 
-class User(TableBase, UserBase, OperationMixin, table=True):
+    update_dt: datetime = Field(
+        default_factory=datetime.now,
+        sa_column_kwargs={"onupdate": func.now()},
+        title="更新时间",
+    )
+
+
+class User(TableBase, UserBase, table=True):
     """用户表"""
 
     __tablename__ = set_table_name("user")

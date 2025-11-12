@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from pydantic_core import PydanticUndefined
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import declared_attr
-from sqlmodel import DateTime, Field, SQLModel, func
+from sqlmodel import Field, SQLModel, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel.main import SQLModelMetaclass
 
@@ -71,7 +71,7 @@ class OperationMixin(SQLModel):
 
     update_dt: datetime = Field(
         default_factory=datetime.now,
-        sa_type=DateTime(),  # type: ignore
+        # sa_type=DateTime(),  # type: ignore/z
         sa_column_kwargs={"onupdate": func.now()},
         title="更新时间",
     )
@@ -81,12 +81,24 @@ class OperationMixin(SQLModel):
     create_user_id: int | None = Field(
         default=None, foreign_key="user.id", title="创建用户"
     )
+
     update_user_id: int | None = Field(
         default=None, foreign_key="user.id", title="更新用户"
     )
+
     delete_user_id: int | None = Field(
         default=None, foreign_key="user.id", title="删除用户"
     )
+
+    # create_user: Optional["User"] = Relationship(
+    #     sa_relationship_kwargs={"lazy": "selectin"},
+    # )
+    # update_user: Optional["User"] = Relationship(
+    #     sa_relationship_kwargs={"lazy": "selectin"},
+    # )
+    # delete_user: Optional["User"] = Relationship(
+    #     sa_relationship_kwargs={"lazy": "selectin"},
+    # )
 
     @classmethod
     async def get_by_id(cls, session: AsyncSession, id: int) -> Self:
@@ -112,8 +124,8 @@ class OperationMixin(SQLModel):
         return self
 
     async def create(self, session: AsyncSession, current_user: "User") -> Self:
-        self.create_user = current_user.id
-        self.update_user = current_user.id
+        self.create_user_id = current_user.id
+        self.update_user_id = current_user.id
         return await self.session_save(session)
 
     async def update(
@@ -122,7 +134,7 @@ class OperationMixin(SQLModel):
         data: Union[Dict[str, Any], BaseModel],
         current_user: "User",
     ) -> Self:
-        self.update_user = current_user.id
+        self.update_user_id = current_user.id
         # self.update_time = datetime.now()
         self.sqlmodel_update(data)
 
@@ -131,7 +143,7 @@ class OperationMixin(SQLModel):
     async def delete(self, session: AsyncSession, current_user: "User") -> None:
         self.active = False
         self.delete_dt = datetime.now()
-        self.delete_user = current_user.id
+        self.delete_user_id = current_user.id
         await self.session_save(session)
         return None
 
