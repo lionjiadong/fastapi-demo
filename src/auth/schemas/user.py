@@ -4,7 +4,6 @@ from pydantic import EmailStr
 from sqlmodel import Field, SQLModel
 
 from src.auth.models.user import UserBase
-from src.database.base import OperationMixin
 
 if TYPE_CHECKING:
     from src.auth.schemas.role import RoleOut
@@ -27,7 +26,7 @@ class UserUpdate(SQLModel):
     )
 
 
-class UserOut(UserBase, OperationMixin):
+class UserOut(UserBase):
     """用户输出模型"""
 
     id: int

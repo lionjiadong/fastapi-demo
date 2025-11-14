@@ -32,6 +32,7 @@ async def create_role(
     current_user: User = Depends(get_current_user),
 ):
     """创建角色"""
+    print(data)
     role = Role.model_validate(data)
     return await role.create(session, current_user)
 

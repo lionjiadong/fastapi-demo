@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 from sqlmodel import Field, SQLModel
 
 from src.auth.models.role import RoleBase
-from src.database.base import OperationMixin
 
 if TYPE_CHECKING:
     from src.auth.schemas.user import UserOut
@@ -23,13 +22,13 @@ class RoleUpdate(SQLModel):
 class RoleCreate(RoleBase):
     """角色创建模型"""
 
-    users: list[int] | None = Field(
-        default=None,
-        description="List of user IDs to associate with the role",
-    )
+    # users: list[int] | None = Field(
+    #     default=None,
+    #     description="List of user IDs to associate with the role",
+    # )
 
 
-class RoleOut(RoleBase, OperationMixin):
+class RoleOut(RoleBase):
     """角色输出模型"""
 
 
