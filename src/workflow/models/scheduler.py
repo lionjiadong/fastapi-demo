@@ -1,16 +1,17 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from zoneinfo import ZoneInfo
 
 from celery import current_app, schedules
 from celery.utils.log import get_logger
+from celery.utils.time import maybe_make_aware
 from cron_descriptor import (
     FormatException,
     MissingFieldException,
     WrongArgumentException,
     get_description,
 )
-from pydantic import JsonValue, model_validator
+from pydantic import JsonValue, ValidationError, model_validator
 from pydantic_extra_types.coordinate import Latitude, Longitude
 from sqlalchemy.event import listen
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
@@ -22,13 +23,15 @@ from sqlmodel import (
     Field,
     Relationship,
     Session,
+    SQLModel,
     col,
+    func,
     insert,
     select,
     update,
 )
 
-from src.database.base import OperationMixin, TableBase, set_table_name
+from src.database.base import TableBase, set_table_name
 from src.workflow.scheduler.clocked_schedule import clocked
 from src.workflow.scheduler.tz_crontab import TzAwareCrontab
 from src.workflow.scheduler.util import cronexp, make_aware, nowfun
@@ -37,43 +40,33 @@ from src.workflow.schemas.enum import IntervalPeriod, SolarEvent
 logger = get_logger("sqlalchemy_celery_beat.models")
 
 
-# class ModelMixin(SQLModel):
-#     """Base model mixin"""
-
-#     id: int = Field(primary_key=True)
-#     created_dt: datetime = Field(
-#         sa_type=DateTime(timezone=True),
-#         default_factory=nowfun,
-#         title="创建时间",
-#     )
-#     updated_dt: datetime = Field(
-#         sa_type=DateTime(timezone=True),
-#         sa_column_kwargs={
-#             "onupdate": nowfun,
-#         },
-#         default_factory=nowfun,
-#         description="更新时间",
-#     )
-
-#     @classmethod
-#     def create(cls, **kwargs):
-#         """创建模型实例"""
-#         return cls(**kwargs)
-
-#     def update(self, **kwargs):
-#         """更新模型实例"""
-#         for k, v in kwargs.items():
-#             setattr(self, k, v)
-#         return self
-
-#     def save(self, session: Session, *args, **kwargs):
-#         """保存模型实例"""
-#         session.add(self)
-#         session.commit()
-
-
-class ModelMixin(TableBase, OperationMixin):
+class ModelMixin(SQLModel):
     """Base model mixin"""
+
+    id: int = Field(primary_key=True)
+    created_dt: datetime = Field(
+        default_factory=datetime.now, nullable=False, title="创建时间"
+    )
+    updated_dt: datetime = Field(
+        sa_column_kwargs={"onupdate": func.now},
+        description="更新时间",
+    )
+
+    @classmethod
+    def create(cls, **kwargs):
+        """创建模型实例"""
+        return cls(**kwargs)
+
+    def update(self, **kwargs):
+        """更新模型实例"""
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+        return self
+
+    def save(self, session: Session, *args, **kwargs):
+        """保存模型实例"""
+        session.add(self)
+        session.commit()
 
 
 class IntervalSchedule(ModelMixin, table=True):
@@ -217,8 +210,7 @@ class CrontabSchedule(ModelMixin, table=True):
             "timezone": schedule.tz,
         }
         try:
-            return session.exec(select(cls).where(**spec)).one()
-            # return session.get(cls, **spec)
+            return session.get(cls, **spec)
         except NoResultFound:
             return cls(**spec)
         except MultipleResultsFound:
@@ -244,7 +236,7 @@ class ClockedSchedule(ModelMixin, table=True):
         return c
 
 
-class PeriodicTaskChanged(ModelMixin, table=True):
+class PeriodicTasksChanged(TableBase, table=True):
     """Helper table for tracking updates to periodic tasks.
 
     This stores a single row with ``id=1``. ``last_update`` is updated via
@@ -258,7 +250,7 @@ class PeriodicTaskChanged(ModelMixin, table=True):
 
     last_update: datetime = Field(
         sa_column=Column(DateTime(timezone=True)),
-        default=nowfun(),
+        default=lambda: maybe_make_aware(datetime.now(tz=timezone.utc)),
     )
 
     @classmethod
@@ -283,12 +275,16 @@ class PeriodicTaskChanged(ModelMixin, table=True):
             connection.execute(
                 insert(cls).values(
                     id=1,
-                    last_update=nowfun(),
+                    last_update=lambda: maybe_make_aware(datetime.now(tz=timezone.utc)),
                 )
             )
         else:
             connection.execute(
-                update(cls).where(col(cls.id) == 1).values(last_update=nowfun())
+                update(cls)
+                .where(col(cls.id) == 1)
+                .values(
+                    last_update=lambda: maybe_make_aware(datetime.now(tz=timezone.utc))
+                )
             )
 
     @classmethod
@@ -301,7 +297,7 @@ class PeriodicTaskChanged(ModelMixin, table=True):
             pass
 
 
-class PeriodicTask(ModelMixin, table=True):
+class PeriodicTask(TableBase, table=True):
     """任务计划表"""
 
     __tablename__ = set_table_name("periodic_task")
@@ -361,10 +357,10 @@ class PeriodicTask(ModelMixin, table=True):
         sa_column=Column(DateTime(timezone=True)),
         description="计划上次触发任务运行的日期时间",
     )
-    total_run_count: int = Field(default=0, description="任务运行次数")
+    total_run_count: Optional[int] = Field(default=None, description="任务运行次数")
 
     date_changed: Optional[datetime] = Field(
-        default=nowfun(),
+        default=lambda: maybe_make_aware(datetime.now(tz=timezone.utc)),
         description="上次修改此PeriodicTask的日期",
     )
     description: Optional[str] = Field(
@@ -387,30 +383,32 @@ class PeriodicTask(ModelMixin, table=True):
     clocked: Optional[ClockedSchedule] = Relationship(back_populates="periodic_task")
 
     @model_validator(mode="before")
-    def validate_unique(cls, values: dict) -> dict:
+    def validate_unique(self, values: dict) -> dict:
         """定时唯一校验"""
-        print(f"values: {values}")
+
         schedule_types = ["interval", "crontab", "solar", "clocked"]
         selected_schedule_types = [
             s for s in schedule_types if values.get(s) is not None
         ]
 
         if len(selected_schedule_types) == 0:
-            raise ValueError("One of clocked, interval, crontab, or solar must be set.")
+            raise ValidationError(
+                "One of clocked, interval, crontab, or solar must be set."
+            )
 
         err_msg = "Only one of clocked, interval, crontab, or solar must be set"
         if len(selected_schedule_types) > 1:
             error_info = {}
             for selected_schedule_type in selected_schedule_types:
                 error_info[selected_schedule_type] = [err_msg]
-            raise ValueError(error_info)
+            raise ValidationError(error_info)
 
         # clocked must be one off task
         if values["clocked"] and not values["one_off"]:
             err_msg = "clocked must be one off, one_off must set True"
-            raise ValueError(err_msg)
+            raise ValidationError(err_msg)
         if (values["expires_seconds"] is not None) and (values["expires"] is not None):
-            raise ValueError("Only one can be set, in expires and expire_seconds")
+            raise ValidationError("Only one can be set, in expires and expire_seconds")
         return values
 
     @property
@@ -450,15 +448,15 @@ class PeriodicTask(ModelMixin, table=True):
         return self.scheduler.schedule
 
 
-listen(PeriodicTask, "after_insert", PeriodicTaskChanged.update_changed)
-listen(PeriodicTask, "after_delete", PeriodicTaskChanged.update_changed)
-listen(PeriodicTask, "after_update", PeriodicTaskChanged.changed)
-listen(IntervalSchedule, "after_insert", PeriodicTaskChanged.update_changed)
-listen(IntervalSchedule, "after_delete", PeriodicTaskChanged.update_changed)
-listen(IntervalSchedule, "after_update", PeriodicTaskChanged.update_changed)
-listen(CrontabSchedule, "after_insert", PeriodicTaskChanged.update_changed)
-listen(CrontabSchedule, "after_delete", PeriodicTaskChanged.update_changed)
-listen(CrontabSchedule, "after_update", PeriodicTaskChanged.update_changed)
-listen(SolarSchedule, "after_insert", PeriodicTaskChanged.update_changed)
-listen(SolarSchedule, "after_delete", PeriodicTaskChanged.update_changed)
-listen(SolarSchedule, "after_update", PeriodicTaskChanged.update_changed)
+listen(PeriodicTask, "after_insert", PeriodicTasksChanged.update_changed)
+listen(PeriodicTask, "after_delete", PeriodicTasksChanged.update_changed)
+listen(PeriodicTask, "after_update", PeriodicTasksChanged.changed)
+listen(IntervalSchedule, "after_insert", PeriodicTasksChanged.update_changed)
+listen(IntervalSchedule, "after_delete", PeriodicTasksChanged.update_changed)
+listen(IntervalSchedule, "after_update", PeriodicTasksChanged.update_changed)
+listen(CrontabSchedule, "after_insert", PeriodicTasksChanged.update_changed)
+listen(CrontabSchedule, "after_delete", PeriodicTasksChanged.update_changed)
+listen(CrontabSchedule, "after_update", PeriodicTasksChanged.update_changed)
+listen(SolarSchedule, "after_insert", PeriodicTasksChanged.update_changed)
+listen(SolarSchedule, "after_delete", PeriodicTasksChanged.update_changed)
+listen(SolarSchedule, "after_update", PeriodicTasksChanged.update_changed)
