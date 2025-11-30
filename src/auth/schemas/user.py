@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from pydantic import EmailStr
@@ -30,6 +31,13 @@ class UserOut(UserBase):
     """用户输出模型"""
 
     id: int
+
+    create_dt: datetime = Field(
+        title="创建时间",
+    )
+    update_dt: datetime = Field(
+        title="更新时间",
+    )
 
 
 class UserOutLinks(UserOut):

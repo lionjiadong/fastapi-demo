@@ -1,6 +1,5 @@
 from fastapi import HTTPException, status
 
-
 authenticate_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="用户名或密码错误.",
@@ -21,7 +20,7 @@ inactive_exception = HTTPException(
 
 no_token_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
-    detail="未提供Token",
+    detail="未提供Token.",
     headers={"WWW-Authenticate": "Bearer"},
 )
 

@@ -1,8 +1,9 @@
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Self
 
 import bcrypt
 from pydantic import EmailStr, ModelWrapValidatorHandler, model_validator
-from sqlmodel import Field, Relationship, SQLModel, select
+from sqlmodel import Field, Relationship, SQLModel, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.auth.exception import authenticate_exception, inactive_exception
@@ -19,14 +20,6 @@ class UserBase(SQLModel):
 
     username: str = Field(unique=True, title="用户名")
     email: EmailStr | None = None
-
-    # create_dt: datetime = Field(default_factory=datetime.now, title="创建时间")
-
-    # update_dt: datetime = Field(
-    #     default_factory=datetime.now,
-    #     sa_column_kwargs={"onupdate": func.now()},
-    #     title="更新时间",
-    # )
 
 
 class User(UserBase, table=True):
@@ -49,6 +42,16 @@ class User(UserBase, table=True):
         title="是否有效",
         description="true有效,反之false",
         sa_column_kwargs={"server_default": "true"},
+    )
+
+    create_dt: datetime = Field(
+        default_factory=datetime.now,
+        title="创建时间",
+    )
+    update_dt: datetime = Field(
+        default_factory=datetime.now,
+        sa_column_kwargs={"onupdate": func.now()},
+        title="更新时间",
     )
 
     async def check_pwd(self, password: str) -> Self:

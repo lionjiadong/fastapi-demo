@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from src.auth.models.auth import Token, authenticate_user, create_access_token
 from src.auth.models.user import User
-from src.auth.schemas.user import UserCreate
+from src.auth.schemas.user import UserCreate, UserOut
 from src.config import settings
 from src.database.core import SessionDep
 
@@ -17,10 +17,10 @@ auth_router = APIRouter(
 )
 
 
-@auth_router.post("/login")
+@auth_router.post("/login", response_model=Token)
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
-) -> Token:
+):
     """登录获取access token"""
     user: User = await authenticate_user(form_data.username, form_data.password)
     access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
@@ -30,11 +30,11 @@ async def login_for_access_token(
     return Token(access_token=access_token, token_type="bearer")
 
 
-@auth_router.post("/register")
+@auth_router.post("/register", response_model=UserOut)
 async def user_register(
     data: UserCreate,
     session: SessionDep,
-) -> User:
+):
     """用户注册"""
     user = User.model_validate(data.model_dump())
     session.add(user)

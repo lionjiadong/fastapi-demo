@@ -9,7 +9,6 @@ from fastapi.openapi.docs import (
 
 swagger_router = APIRouter(
     tags=["swagger"],
-    responses={404: {"description": "Not found"}, 401: {"description": "未提供TOKEN"}},
 )
 
 fast_api_swagger = FastAPI()

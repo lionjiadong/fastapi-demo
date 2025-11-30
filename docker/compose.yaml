@@ -1,21 +1,21 @@
 services:
   postgres:
-    image: postgres:17.4
+    image: postgres:18.1
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data
+      - ./postgres_data:/var/lib/postgresql/18.1/data
     ports:
       - 5432:5432
   redis:
-    image: redis:8.0.2
+    image: redis:8.4
     volumes:
       - ./redis_data:/var/lib/redis/data
     ports:
       - 6379:6379
   rabbitmq:
-    image: rabbitmq:4.1.0-management
+    image: rabbitmq:4.2.1-management
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
