@@ -5,9 +5,10 @@ from typing import Any, Dict, Self, Union
 from fastapi import HTTPException
 from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Field, SQLModel, func
+from sqlmodel import Field, SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+# if TYPE_CHECKING:
 from src.auth.models.user import User
 
 
@@ -30,7 +31,7 @@ class AuditMixin(SQLModel):
 
     update_dt: datetime = Field(
         default_factory=datetime.now,
-        sa_column_kwargs={"onupdate": func.now()},
+        sa_column_kwargs={"onupdate": datetime.now},
         title="更新时间",
     )
     update_user_id: int | None = Field(
@@ -41,9 +42,6 @@ class AuditMixin(SQLModel):
     delete_user_id: int | None = Field(
         default=None, foreign_key="user.id", title="删除用户"
     )
-    # create_user: Optional["User"] = Relationship(
-    #     sa_relationship_kwargs={"lazy": "selectin"},
-    # )
 
     async def session_save(self, session: AsyncSession) -> Self:
         try:

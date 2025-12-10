@@ -1,12 +1,15 @@
-from typing import TYPE_CHECKING
+from __future__ import annotations
 
-from sqlmodel import Field, SQLModel
+from typing import TYPE_CHECKING, List
+
+from sqlalchemy.orm import Mapped
+from sqlmodel import Field, Relationship, SQLModel
 
 from src.database.base import TableBase, set_table_name
 from src.database.mixin import AuditMixin
 
 if TYPE_CHECKING:
-    pass
+    from src.auth.models.user import User
 
 
 class DepartmentBase(SQLModel):
@@ -22,8 +25,16 @@ class Department(TableBase, AuditMixin, DepartmentBase, table=True):
     __tablename__ = set_table_name("department")
     __table_args__ = {"comment": "部门表"}
 
-    # users: list["User"] = Relationship(
-    #     back_populates="roles",
-    #     link_model=UserRoleLink,
-    #     sa_relationship_kwargs={"lazy": "selectin"},
-    # )
+    created_user: User | None = Relationship(
+        sa_relationship_kwargs={"foreign_keys": "[Department.create_user_id]"}
+    )
+    updated_user: User | None = Relationship(
+        sa_relationship_kwargs={"foreign_keys": "[Department.update_user_id]"}
+    )
+    deleted_user: User | None = Relationship(
+        sa_relationship_kwargs={"foreign_keys": "[Department.delete_user_id]"}
+    )
+    users: Mapped[List["User"]] = Relationship(
+        back_populates="department",
+        sa_relationship_kwargs={"foreign_keys": "[User.department_id]"},
+    )

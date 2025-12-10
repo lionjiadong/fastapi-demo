@@ -25,8 +25,10 @@ async def read_departments(
     limit: int = Query(default=100, le=100),
 ):
     """获取多个角色"""
-    roles = (await session.exec(select(Department).offset(offset).limit(limit))).all()
-    return roles
+    departments = (
+        await session.exec(select(Department).offset(offset).limit(limit))
+    ).all()
+    return departments
 
 
 @department_router.post("/", response_model=DepartmentOutLinks)

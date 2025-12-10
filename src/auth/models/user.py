@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Self
 
 import bcrypt
 from pydantic import EmailStr, ModelWrapValidatorHandler, model_validator
-from sqlmodel import Field, SQLModel, func, select
+from sqlmodel import Field, Relationship, SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.auth.exception import authenticate_exception, inactive_exception
@@ -11,7 +13,7 @@ from src.database.base import TableBase, set_table_name
 from src.database.core import async_engine
 
 if TYPE_CHECKING:
-    pass
+    from src.auth.models.department import Department
 
 
 class UserBase(SQLModel):
@@ -46,10 +48,22 @@ class User(TableBase, UserBase, table=True):
         default_factory=datetime.now,
         title="创建时间",
     )
+
     update_dt: datetime = Field(
         default_factory=datetime.now,
-        sa_column_kwargs={"onupdate": func.now()},
+        sa_column_kwargs={"onupdate": datetime.now},
         title="更新时间",
+    )
+
+    last_login_dt: datetime | None = Field(default=None)
+    password_changed_dt: datetime | None = Field(default=None)
+
+    department_id: int | None = Field(
+        foreign_key="department.id", title="所属部门", default=None
+    )
+    department: Department = Relationship(
+        back_populates="users",
+        sa_relationship_kwargs={"foreign_keys": "[User.department_id]"},
     )
 
     async def check_pwd(self, password: str) -> Self:
