@@ -59,11 +59,11 @@ async def update_user(
 ):
     """更新用户"""
     user = await User.get_by_id(session, user_id)
-    return await user.update(
-        session=session,
-        data=data.model_dump(exclude_unset=True),
-        current_user=current_user,
-    )
+    user.sqlmodel_update(data.model_dump(exclude_unset=True))
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+    return user
 
 
 @user_router.delete("/{user_id}")

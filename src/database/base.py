@@ -25,21 +25,25 @@ class DescriptionMeta(SQLModelMetaclass):
         fields = new_class.model_fields
         for k, field in fields.items():
             desc = field.description
-            if desc:
+            title = field.title
+            if title:
+                db_comment = title
+                if desc and title != desc:
+                    db_comment = f"{title}: {desc}"
                 # deal with sa_column_kwargs
                 if field.sa_column_kwargs is not PydanticUndefined:
-                    field.sa_column_kwargs["comment"] = desc
+                    field.sa_column_kwargs["comment"] = db_comment
                 else:
-                    field.sa_column_kwargs = {"comment": desc}
+                    field.sa_column_kwargs = {"comment": db_comment}
                 # deal with sa_column
                 if field.sa_column is not PydanticUndefined:
                     if not field.sa_column.comment:
-                        field.sa_column.comment = desc
+                        field.sa_column.comment = db_comment
                 # deal with attributes of new_class
                 if hasattr(new_class, k):
                     column = getattr(new_class, k)
                     if hasattr(column, "comment") and not column.comment:
-                        column.comment = desc
+                        column.comment = db_comment
         return new_class
 
 

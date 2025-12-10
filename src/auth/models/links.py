@@ -3,7 +3,7 @@ from sqlmodel import Field, SQLModel
 from src.database.base import set_table_name
 
 
-class UserRoleLink(SQLModel, table=True):
+class UserRoleLink(SQLModel):
     """用户角色关联表"""
 
     __tablename__ = set_table_name("user_role_link")

@@ -4,7 +4,7 @@ from sqlmodel import Relationship, SQLModel
 
 from src.auth.models.links import UserRoleLink
 from src.database.base import TableBase, set_table_name
-from src.database.mixin import CreateMixin
+from src.database.mixin import AuditMixin
 
 if TYPE_CHECKING:
     from src.auth.models.user import User
@@ -17,7 +17,7 @@ class RoleBase(SQLModel):
     code: str
 
 
-class Role(TableBase, RoleBase, CreateMixin, table=True):
+class Role(TableBase, RoleBase, AuditMixin):
     """角色表"""
 
     __tablename__ = set_table_name("role")

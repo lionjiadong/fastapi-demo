@@ -19,29 +19,29 @@ class Worker(TableBase, table=True):
     __tablename__ = set_table_name("worker")
     __table_args__ = {"comment": "工人表"}
 
-    hostname: str | None = Field(default=None, description="工人主机名")
+    hostname: str | None = Field(default=None, title="工人主机名")
     freq: (
         Annotated[
             Decimal,
             BeforeValidator(lambda x: Decimal(x).quantize(Decimal("0.0"))),
         ]
         | None
-    ) = Field(default=None, description="工人心跳频率(秒)")
-    clock: int | None = Field(default=None, description="任务时钟")
-    alive: bool | None = Field(default=None, description="工人是否存活")
-    active: int | None = Field(default=None, description="活跃任务数")
-    processed: int | None = Field(default=None, description="已处理任务数")
-    sw_ident: str | None = Field(default=None, description="工人标识")
-    sw_ver: str | None = Field(default=None, description="工人版本")
-    sw_sys: str | None = Field(default=None, description="工人系统")
-    pid: int | None = Field(default=None, description="工人进程ID")
+    ) = Field(default=None, title="工人心跳频率(秒)")
+    clock: int | None = Field(default=None, title="任务时钟")
+    alive: bool | None = Field(default=None, title="工人是否存活")
+    active: int | None = Field(default=None, title="活跃任务数")
+    processed: int | None = Field(default=None, title="已处理任务数")
+    sw_ident: str | None = Field(default=None, title="工人标识")
+    sw_ver: str | None = Field(default=None, title="工人版本")
+    sw_sys: str | None = Field(default=None, title="工人系统")
+    pid: int | None = Field(default=None, title="工人进程ID")
     timestamp: datetime | None = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
-        description="工人时间戳",
+        title="工人时间戳",
     )
-    type: str | None = Field(default=None, description="消息类型")
-    utcoffset: int | None = Field(default=None, description="工人UTC偏移")
+    type: str | None = Field(default=None, title="消息类型")
+    utcoffset: int | None = Field(default=None, title="工人UTC偏移")
 
     tasks: list["Task"] = Relationship(back_populates="worker")
 

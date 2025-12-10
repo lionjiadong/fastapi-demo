@@ -7,7 +7,7 @@ from sqlmodel import Field, SQLModel
 from src.auth.models.user import UserBase
 
 if TYPE_CHECKING:
-    from src.auth.schemas.role import RoleOut
+    pass
 
 
 class UserCreate(UserBase):
@@ -21,10 +21,10 @@ class UserUpdate(SQLModel):
 
     username: str | None = None
     email: EmailStr | None = None
-    roles: list[int] | None = Field(
-        default=None,
-        description="List of role IDs to associate with the user",
-    )
+    # roles: list[int] | None = Field(
+    #     default=None,
+    #     title="List of role IDs to associate with the user",
+    # )
 
 
 class UserOut(UserBase):
@@ -43,4 +43,4 @@ class UserOut(UserBase):
 class UserOutLinks(UserOut):
     """用户输出模型，包含关联的角色列表"""
 
-    roles: list["RoleOut"] | None = []
+    # roles: list["RoleOut"] | None = []

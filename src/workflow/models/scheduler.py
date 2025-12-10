@@ -49,7 +49,7 @@ class ModelMixin(SQLModel):
     )
     updated_dt: datetime = Field(
         sa_column_kwargs={"onupdate": func.now},
-        description="更新时间",
+        title="更新时间",
     )
 
     @classmethod
@@ -75,9 +75,9 @@ class IntervalSchedule(ModelMixin, table=True):
     __tablename__ = set_table_name("interval_schedule")
     __table_args__ = {"comment": "任务周期定时定义表"}
 
-    every: int = Field(default=0, description="周期频率")
+    every: int = Field(default=0, title="周期频率")
     period: IntervalPeriod = Field(
-        sa_column=Column(Enum(IntervalPeriod)), description="周期单位"
+        sa_column=Column(Enum(IntervalPeriod)), title="周期单位"
     )
 
     periodic_task: Optional["PeriodicTask"] = Relationship(back_populates="interval")
@@ -104,10 +104,10 @@ class SolarSchedule(ModelMixin, table=True):
 
     event: SolarEvent = Field(
         sa_column=Column(Enum(SolarEvent, create_constraint=True)),
-        description="天文事件",
+        title="天文事件",
     )
-    latitude: Latitude = Field(description="纬度")
-    longitude: Longitude = Field(description="经度")
+    latitude: Latitude = Field(title="纬度")
+    longitude: Longitude = Field(title="经度")
     periodic_task: Optional["PeriodicTask"] = Relationship(back_populates="solar")
 
     @property
@@ -143,12 +143,12 @@ class CrontabSchedule(ModelMixin, table=True):
     # 4 chars for each value (what we save on 0-9 accomodates the []).
     # We leave the other fields at their historical length.
     #
-    minute: str = Field(max_length=60 * 4, default="*", description="分钟")
-    hour: str = Field(max_length=24 * 4, default="*", description="小时")
-    day_of_week: str = Field(max_length=64, default="*", description="星期")
-    day_of_month: str = Field(max_length=31 * 4, default="*", description="天")
-    month_of_year: str = Field(max_length=64, default="*", description="月")
-    timezone: str = Field(max_length=64, default="UTC", description="时区")
+    minute: str = Field(max_length=60 * 4, default="*", title="分钟")
+    hour: str = Field(max_length=24 * 4, default="*", title="小时")
+    day_of_week: str = Field(max_length=64, default="*", title="星期")
+    day_of_month: str = Field(max_length=31 * 4, default="*", title="天")
+    month_of_year: str = Field(max_length=64, default="*", title="月")
+    timezone: str = Field(max_length=64, default="UTC", title="时区")
     periodic_task: Optional["PeriodicTask"] = Relationship(back_populates="crontab")
 
     @property
@@ -303,72 +303,72 @@ class PeriodicTask(TableBase, table=True):
     __tablename__ = set_table_name("periodic_task")
     __table_args__ = {"comment": "任务周期计划表"}
 
-    name: str = Field(unique=True, description="计划名称")
-    task: str = Field(unique=True, description="任务名称")
+    name: str = Field(unique=True, title="计划名称")
+    task: str = Field(unique=True, title="任务名称")
 
     args: Optional[JsonValue] = Field(
         default=None,
         sa_column=Column(JSON),
-        description="任务位置参数",
+        title="任务位置参数",
     )
     kwargs: Optional[JsonValue] = Field(
         default=None,
         sa_column=Column(JSON),
-        description="任务关键字参数",
+        title="任务关键字参数",
     )
     queue: Optional[str] = Field(
         default=None,
-        description="任务队列",
+        title="任务队列",
     )
-    exchange: Optional[str] = Field(default=None, description="任务交换机")
-    routing_key: Optional[str] = Field(default=None, description="任务路由键")
+    exchange: Optional[str] = Field(default=None, title="任务交换机")
+    routing_key: Optional[str] = Field(default=None, title="任务路由键")
     headers: Optional[str] = Field(
         default=None,
         sa_column=Column(JSON),
-        description="任务AMQP消息头",
+        title="任务AMQP消息头",
     )
     priority: Optional[int] = Field(
         default=None,
-        description="任务优先级",
+        title="任务优先级",
     )
     expires: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
-        description="Datetime after which the schedule will no longer "
+        title="Datetime after which the schedule will no longer "
         "trigger the task to run",
     )
-    expire_seconds: Optional[int] = Field(default=None, description="任务过期秒数")
+    expire_seconds: Optional[int] = Field(default=None, title="任务过期秒数")
 
     one_off: Optional[bool] = Field(
         default=None,
-        description="是否只运行一次",
+        title="是否只运行一次",
     )
     start_time: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
-        description="任务开始时间",
+        title="任务开始时间",
     )
     enabled: Optional[bool] = Field(
         default=None,
-        description="是否启用计划",
+        title="是否启用计划",
     )
     last_run_at: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True)),
-        description="计划上次触发任务运行的日期时间",
+        title="计划上次触发任务运行的日期时间",
     )
-    total_run_count: Optional[int] = Field(default=None, description="任务运行次数")
+    total_run_count: Optional[int] = Field(default=None, title="任务运行次数")
 
     date_changed: Optional[datetime] = Field(
         default=lambda: maybe_make_aware(datetime.now(tz=timezone.utc)),
-        description="上次修改此PeriodicTask的日期",
+        title="上次修改此PeriodicTask的日期",
     )
     description: Optional[str] = Field(
         default=None,
-        description="任务描述",
+        title="任务描述",
     )
 
-    no_changes: bool = Field(description="是否无变更", default=False)
+    no_changes: bool = Field(title="是否无变更", default=False)
 
     interval_id: Optional[int] = Field(default=None, foreign_key="interval_schedule.id")
     interval: Optional[IntervalSchedule] = Relationship(back_populates="periodic_task")

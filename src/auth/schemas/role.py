@@ -15,7 +15,7 @@ class RoleUpdate(SQLModel):
     code: str | None = None
     users: list[int] | None = Field(
         default=None,
-        description="List of user IDs to associate with the role",
+        title="List of user IDs to associate with the role",
     )
 
 
@@ -24,7 +24,7 @@ class RoleCreate(RoleBase):
 
     # users: list[int] | None = Field(
     #     default=None,
-    #     description="List of user IDs to associate with the role",
+    #     title="List of user IDs to associate with the role",
     # )
 
 
