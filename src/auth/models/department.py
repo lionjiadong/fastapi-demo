@@ -25,6 +25,7 @@ class Department(TableBase, AuditMixin, DepartmentBase, table=True):
     created_user: "User" = Relationship(
         sa_relationship_kwargs={"foreign_keys": "[Department.create_user_id]"}
     )
+
     updated_user: "User" = Relationship(
         sa_relationship_kwargs={"foreign_keys": "[Department.update_user_id]"}
     )

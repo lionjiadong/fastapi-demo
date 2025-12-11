@@ -23,6 +23,15 @@ class DescriptionMeta(SQLModelMetaclass):
     ) -> Any:
         new_class = super().__new__(mcs, name, bases, class_dict, **kwargs)
         fields = new_class.model_fields
+
+        # 为所有关系字段添加 {"lazy": "selectin"}
+        for k, field in class_dict.items():
+            if getattr(field, "sa_relationship_kwargs", None):
+                sa_relationship_kwargs = field.sa_relationship_kwargs
+                if "lazy" not in sa_relationship_kwargs:
+                    sa_relationship_kwargs["lazy"] = "selectin"
+
+        # 增加字段描述到数据库列注释
         for k, field in fields.items():
             desc = field.description
             title = field.title

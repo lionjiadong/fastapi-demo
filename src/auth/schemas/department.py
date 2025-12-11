@@ -39,3 +39,10 @@ class DepartmentOutLinks(DepartmentOut):
     """部门输出模型，包含关联的用户列表"""
 
     # users: list["UserOut"] | None = []
+
+
+class DepartmentSearch(SQLModel):
+    """部门搜索模型"""
+
+    name: str | None = None
+    code: str | None = None

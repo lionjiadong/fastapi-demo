@@ -70,10 +70,7 @@ class User(TableBase, UserDateBase, table=True):
 
     department: "Department" = Relationship(
         back_populates="users",
-        sa_relationship_kwargs={
-            "foreign_keys": "[User.department_id]",
-            "lazy": "selectin",
-        },
+        sa_relationship_kwargs={"foreign_keys": "[User.department_id]"},
     )
 
     async def check_pwd(self, password: str) -> Self:
