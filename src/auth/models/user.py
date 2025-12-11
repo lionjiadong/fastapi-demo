@@ -1,16 +1,16 @@
-from __future__ import annotations
-
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any, Dict, Self, Union
 
 import bcrypt
-from pydantic import EmailStr, ModelWrapValidatorHandler, model_validator
+from pydantic import BaseModel, EmailStr, ModelWrapValidatorHandler, model_validator
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Field, Relationship, SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.auth.exception import authenticate_exception, inactive_exception
 from src.database.base import TableBase, set_table_name
 from src.database.core import async_engine
+from src.database.exception import integrityError_exception
 
 if TYPE_CHECKING:
     from src.auth.models.department import Department
@@ -22,20 +22,13 @@ class UserBase(SQLModel):
     username: str = Field(unique=True, title="用户名")
     email: EmailStr | None = None
 
+    department_id: int | None = Field(
+        foreign_key="department.id", title="所属部门", default=None
+    )
 
-class User(TableBase, UserBase, table=True):
-    """用户表"""
 
-    __tablename__ = set_table_name("user")
-    __table_args__ = {"comment": "用户表"}
-
-    hashed_password: str
-
-    # roles: list["Role"] = Relationship(
-    #     back_populates="users",
-    #     link_model=UserRoleLink,
-    #     sa_relationship_kwargs={"lazy": "selectin"},
-    # )
+class UserDateBase(UserBase):
+    """用户时间节点模型"""
 
     active: bool = Field(
         default=True,
@@ -55,15 +48,32 @@ class User(TableBase, UserBase, table=True):
         title="更新时间",
     )
 
-    last_login_dt: datetime | None = Field(default=None)
-    password_changed_dt: datetime | None = Field(default=None)
+    delete_dt: datetime | None = Field(default=None, nullable=True, title="删除时间")
 
-    department_id: int | None = Field(
-        foreign_key="department.id", title="所属部门", default=None
-    )
-    department: Department = Relationship(
+    last_login_dt: datetime | None = Field(default=None, title="最后登录时间")
+    password_changed_dt: datetime | None = Field(default=None, title="密码最后修改时间")
+
+
+class User(TableBase, UserDateBase, table=True):
+    """用户表"""
+
+    __tablename__ = set_table_name("user")
+    __table_args__ = {"comment": "用户表"}
+
+    hashed_password: str
+
+    # roles: list["Role"] = Relationship(
+    #     back_populates="users",
+    #     link_model=UserRoleLink,
+    #     sa_relationship_kwargs={"lazy": "selectin"},
+    # )
+
+    department: "Department" = Relationship(
         back_populates="users",
-        sa_relationship_kwargs={"foreign_keys": "[User.department_id]"},
+        sa_relationship_kwargs={
+            "foreign_keys": "[User.department_id]",
+            "lazy": "selectin",
+        },
     )
 
     async def check_pwd(self, password: str) -> Self:
@@ -93,12 +103,46 @@ class User(TableBase, UserBase, table=True):
     async def get_user(cls, user_id: int) -> Self:
         """根据用户ID获取用户"""
         async with AsyncSession(async_engine) as session:
-            user_db = (
-                await session.exec(
-                    select(cls).where(cls.id == user_id).where(cls.active == True)
-                )
-            ).first()
+            stmt = select(cls).where(cls.id == user_id, cls.active)
+            user_db = await session.exec(stmt)
+            user_db = user_db.first()  # 获取查询结果
             if not user_db:
                 raise inactive_exception
             user = cls.model_validate(user_db)
         return user
+
+    async def session_save(self, session: AsyncSession) -> Self:
+        try:
+            session.add(self)
+            await session.commit()
+            await session.refresh(self)
+        except IntegrityError as e:
+            await session.rollback()
+            raise integrityError_exception(e.args[0]) from e
+        return self
+
+    async def create(self, session: AsyncSession) -> Self:
+        """
+        创建时设置创建用户, 更新用户
+        """
+        return await self.session_save(session)
+
+    async def update(
+        self,
+        session: AsyncSession,
+        data: Union[Dict[str, Any], BaseModel],
+    ) -> Self:
+        """
+        更新时设置更新用户
+        """
+        self.sqlmodel_update(data)
+        return await self.session_save(session)
+
+    async def delete(self, session: AsyncSession) -> None:
+        """
+        删除时设置删除用户, 删除时间, 并设置有效状态为false
+        """
+        self.active = False
+        self.delete_dt = datetime.now()
+        await self.session_save(session)
+        return None

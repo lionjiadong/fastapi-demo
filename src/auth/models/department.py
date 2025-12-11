@@ -1,8 +1,5 @@
-from __future__ import annotations
+from typing import TYPE_CHECKING
 
-from typing import TYPE_CHECKING, List
-
-from sqlalchemy.orm import Mapped
 from sqlmodel import Field, Relationship, SQLModel
 
 from src.database.base import TableBase, set_table_name
@@ -25,16 +22,17 @@ class Department(TableBase, AuditMixin, DepartmentBase, table=True):
     __tablename__ = set_table_name("department")
     __table_args__ = {"comment": "部门表"}
 
-    created_user: User | None = Relationship(
+    created_user: "User" = Relationship(
         sa_relationship_kwargs={"foreign_keys": "[Department.create_user_id]"}
     )
-    updated_user: User | None = Relationship(
+    updated_user: "User" = Relationship(
         sa_relationship_kwargs={"foreign_keys": "[Department.update_user_id]"}
     )
-    deleted_user: User | None = Relationship(
+    deleted_user: "User" = Relationship(
         sa_relationship_kwargs={"foreign_keys": "[Department.delete_user_id]"}
     )
-    users: Mapped[List["User"]] = Relationship(
+
+    users: list["User"] = Relationship(
         back_populates="department",
         sa_relationship_kwargs={"foreign_keys": "[User.department_id]"},
     )

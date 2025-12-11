@@ -39,7 +39,7 @@ async def create_user(
 ):
     """创建用户"""
     user = User.model_validate(data.model_dump())
-    return await user.create(session, current_user)
+    return await user.create(session)
 
 
 @user_router.get("/{user_id}", response_model=UserOutLinks)
@@ -59,11 +59,10 @@ async def update_user(
 ):
     """更新用户"""
     user = await User.get_by_id(session, user_id)
-    user.sqlmodel_update(data.model_dump(exclude_unset=True))
-    session.add(user)
-    await session.commit()
-    await session.refresh(user)
-    return user
+    return await user.update(
+        session=session,
+        data=data.model_dump(exclude_unset=True),
+    )
 
 
 @user_router.delete("/{user_id}")
@@ -74,5 +73,5 @@ async def delete_user(
 ):
     """删除用户"""
     user = await User.get_by_id(session, user_id)
-    await user.delete(session=session, current_user=current_user)
+    await user.delete(session=session)
     return {"ok": True}

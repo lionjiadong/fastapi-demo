@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from sqlmodel import SQLModel
 
 from src.auth.models.department import DepartmentBase
-from src.database.mixin import AuditMixin
+from src.database.mixin import AuditOutPutMixin
 
 if TYPE_CHECKING:
     pass
@@ -29,8 +29,10 @@ class DepartmentCreate(DepartmentBase):
     # )
 
 
-class DepartmentOut(DepartmentBase, AuditMixin):
+class DepartmentOut(DepartmentBase, AuditOutPutMixin):
     """部门输出模型"""
+
+    id: int
 
 
 class DepartmentOutLinks(DepartmentOut):

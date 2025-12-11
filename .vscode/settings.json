@@ -34,5 +34,6 @@
   },
   "ruff.lineLength": 88,
   "ruff.fixAll": true,
-  "ruff.organizeImports": true
+  "ruff.organizeImports": true,
+  "ruff.exclude": ["src/__init__.py", "src/database/revisions/env.py"]
 }
