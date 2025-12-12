@@ -1,5 +1,5 @@
-from .department import Department
-from .user import User
+# from .department import Department
+# from .user import User
 
-User.model_rebuild()
-Department.model_rebuild()
+# User.model_rebuild()
+# Department.model_rebuild()

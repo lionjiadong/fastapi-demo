@@ -6,7 +6,7 @@ from src.auth.models.department import DepartmentBase
 from src.database.mixin import AuditOutPutMixin
 
 if TYPE_CHECKING:
-    pass
+    from src.auth.schemas.user import UserOut
 
 
 class DepartmentUpdate(SQLModel):
@@ -14,31 +14,30 @@ class DepartmentUpdate(SQLModel):
 
     name: str | None = None
     code: str | None = None
-    # users: list[int] | None = Field(
-    #     default=None,
-    #     title="List of user IDs to associate with the role",
-    # )
 
 
 class DepartmentCreate(DepartmentBase):
     """部门创建模型"""
 
-    # users: list[int] | None = Field(
-    #     default=None,
-    #     title="List of user IDs to associate with the role",
-    # )
 
-
-class DepartmentOut(DepartmentBase, AuditOutPutMixin):
+class DepartmentOut(DepartmentBase):
     """部门输出模型"""
 
     id: int
 
+    # users: list["UserOut"] | None = []
 
-class DepartmentOutLinks(DepartmentOut):
+
+class DepartmentOutLinks(DepartmentOut, AuditOutPutMixin):
     """部门输出模型，包含关联的用户列表"""
 
-    # users: list["UserOut"] | None = []
+    users: list["UserOut"] | None = []
+
+
+# class DepartmentOutLinks(DepartmentOut):
+#     """部门输出模型，包含关联的用户列表"""
+
+#     # users: list["UserOut"] | None = []
 
 
 class DepartmentSearch(SQLModel):

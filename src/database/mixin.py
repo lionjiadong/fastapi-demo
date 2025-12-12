@@ -1,13 +1,16 @@
 from datetime import datetime
-from typing import Any, Dict, Self, Union
+from typing import TYPE_CHECKING, Any, Dict, Self, Union
 
 from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Field, SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.auth.models.user import User
 from src.database.exception import integrityError_exception
+
+if TYPE_CHECKING:
+    from src.auth.models.user import User
+    from src.auth.schemas.user import UserOut
 
 
 class AuditMixin(SQLModel):
@@ -51,7 +54,7 @@ class AuditMixin(SQLModel):
             raise integrityError_exception(e.args[0]) from e
         return self
 
-    async def create(self, session: AsyncSession, current_user: User) -> Self:
+    async def create(self, session: AsyncSession, current_user: "User") -> Self:
         """
         创建时设置创建用户, 更新用户
         """
@@ -63,7 +66,7 @@ class AuditMixin(SQLModel):
         self,
         session: AsyncSession,
         data: Union[Dict[str, Any], BaseModel],
-        current_user: User,
+        current_user: "User",
     ) -> Self:
         """
         更新时设置更新用户
@@ -72,7 +75,7 @@ class AuditMixin(SQLModel):
         self.sqlmodel_update(data)
         return await self.session_save(session)
 
-    async def delete(self, session: AsyncSession, current_user: User) -> None:
+    async def delete(self, session: AsyncSession, current_user: "User") -> None:
         """
         删除时设置删除用户, 删除时间, 并设置有效状态为false
         """
@@ -83,9 +86,13 @@ class AuditMixin(SQLModel):
         return None
 
 
-class AuditOutPutMixin(AuditMixin):
+class AuditOutPutMixin(SQLModel):
     """
     输出相关混合
     """
 
     id: int
+    create_dt: datetime
+    created_user: "UserOut | None" = None
+    update_dt: datetime
+    delete_dt: datetime | None = None

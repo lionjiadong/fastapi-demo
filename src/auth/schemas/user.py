@@ -1,13 +1,12 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from pydantic import EmailStr
 from sqlmodel import SQLModel
 
 from src.auth.models.user import UserBase, UserDateBase
-from src.auth.schemas.department import DepartmentOut
 
 if TYPE_CHECKING:
-    pass
+    from src.auth.schemas.department import DepartmentOut
 
 
 class UserCreate(UserBase):
@@ -33,10 +32,14 @@ class UserOut(UserDateBase):
 
     id: int
 
-    department: "DepartmentOut | None" = None
-
 
 class UserOutLinks(UserOut):
-    """用户输出模型，包含关联的角色列表"""
+    """用户输出模型，包含关联的部门信息"""
 
-    # roles: list["RoleOut"] | None = []
+    department: Optional["DepartmentOut"] = None
+
+
+# class UserOutLinks(UserOut):
+#     """用户输出模型，包含关联的角色列表"""
+
+# roles: list["RoleOut"] | None = []
